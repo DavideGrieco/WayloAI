@@ -6,7 +6,7 @@ import type { GeneratePackingListOutput } from '@/ai/flows/generate-packing-list
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Sunscreen, Pill, Glasses, Umbrella, Plane, Train, Car, Gem } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
@@ -131,7 +131,7 @@ const getPackingItemIcon = (itemName: string): React.ReactNode => {
     // Articoli da toeletta & Farmaci
     if (name.includes('spazzolino') || name.includes('dentifricio')) return <Gem className="text-green-600" />; // No icon for tooth
     if (name.includes('farmaci') || name.includes('medicinali') || name.includes('kit primo soccorso')) return <Pill className="text-green-500" />;
-    if (name.includes('crema solare')) return <Sunscreen className="text-green-400" />;
+    if (name.includes('crema solare')) return <Sun className="text-green-400" />;
 
     // Extra
     if (name.includes('ombrello')) return <Umbrella className="text-yellow-500" />;
