@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
@@ -5,7 +6,7 @@ import type { GeneratePackingListOutput } from '@/ai/flows/generate-packing-list
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Sunscreen, Pill, Glasses, Umbrella, Plane, Train, Car, Gem } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
@@ -103,6 +104,43 @@ const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput
     return <Briefcase className="h-6 w-6 text-muted-foreground" />;
 };
 
+const getPackingItemIcon = (itemName: string): React.ReactNode => {
+    const name = itemName.toLowerCase();
+    
+    // Abbigliamento
+    if (name.includes('pantaloni')) return <Gem className="text-blue-600" />;
+    if (name.includes('camicia') || name.includes('magliett') || name.includes('top')) return <Shirt className="text-blue-500" />;
+    if (name.includes('scarpe') || name.includes('stivali')) return <Footprints className="text-yellow-700" />;
+    if (name.includes('giacca') || name.includes('cappotto')) return <Gem className="text-gray-600" />; // Non c'è un'icona per giacca, uso Gem
+    if (name.includes('calzini')) return <Gem className="text-gray-500" />;
+    if (name.includes('occhiali')) return <Glasses className="text-purple-500" />;
+    if (name.includes('costume')) return <Gem className="text-teal-500" />;
+
+    // Documenti
+    if (name.includes('passaporto') || name.includes('carta d\'identità')) return <FileText className="text-red-600" />;
+    if (name.includes('bigliett')) return <Plane className="text-red-500" />;
+    if (name.includes('prenotazion')) return <BookOpen className="text-red-400" />;
+
+    // Elettronica
+    if (name.includes('telefono') || name.includes('smartphone')) return <Router className="text-gray-700" />;
+    if (name.includes('caricabatteri') || name.includes('power bank')) return <BatteryCharging className="text-gray-600" />;
+    if (name.includes('adattatore')) return <Plug className="text-gray-500" />;
+    if (name.includes('cuffie')) return <Headphones className="text-gray-800" />;
+    if (name.includes('fotocamera')) return <Camera className="text-gray-900" />;
+    
+    // Articoli da toeletta & Farmaci
+    if (name.includes('spazzolino') || name.includes('dentifricio')) return <Gem className="text-green-600" />; // No icon for tooth
+    if (name.includes('farmaci') || name.includes('medicinali') || name.includes('kit primo soccorso')) return <Pill className="text-green-500" />;
+    if (name.includes('crema solare')) return <Sunscreen className="text-green-400" />;
+
+    // Extra
+    if (name.includes('ombrello')) return <Umbrella className="text-yellow-500" />;
+    if (name.includes('libro')) return <BookOpen className="text-yellow-600" />;
+
+    return <Circle className="h-4 w-4 text-muted-foreground" />;
+};
+
+
 const PackingListDisplay = ({ data }: { data: GeneratePackingListOutput }) => {
   return (
     <div className="space-y-6 pt-6">
@@ -127,12 +165,15 @@ const PackingListDisplay = ({ data }: { data: GeneratePackingListOutput }) => {
             <AccordionContent>
               <ul className="space-y-3 pl-4">
                 {category.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="flex flex-col">
+                  <li key={itemIndex} className="flex flex-col p-2 rounded-md hover:bg-muted/50 transition-colors">
                     <div className='flex items-center justify-between'>
-                      <span className="font-medium">{item.name}</span>
+                      <div className="flex items-center gap-3">
+                        {getPackingItemIcon(item.name)}
+                        <span className="font-medium">{item.name}</span>
+                      </div>
                       <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">{item.quantity}</span>
                     </div>
-                    {item.notes && <p className="text-xs text-muted-foreground mt-1 ml-1">{item.notes}</p>}
+                    {item.notes && <p className="text-xs text-muted-foreground mt-2 pl-7">{item.notes}</p>}
                   </li>
                 ))}
               </ul>
