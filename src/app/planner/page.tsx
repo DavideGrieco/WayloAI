@@ -29,6 +29,8 @@ export default function PlannerPage() {
   }, [user, authLoading, router]);
 
   const handleSubmit = async (data: ItineraryFormValues) => {
+    // Il controllo del limite è stato rimosso per la prototipazione
+    /*
     if (!isReady) {
       toast({
         title: 'Attendere prego',
@@ -46,6 +48,7 @@ export default function PlannerPage() {
       });
       return;
     }
+    */
 
     setIsLoading(true);
     setItineraryData(null);
@@ -57,7 +60,7 @@ export default function PlannerPage() {
         endDate: data.dates.to?.toISOString().split('T')[0] ?? '',
       });
       setItineraryData(result);
-      incrementUsage();
+      // incrementUsage(); // Rimosso per prototipazione
     } catch (error) {
       console.error('Errore nella generazione dell\'itinerario:', error);
       toast({
@@ -99,11 +102,14 @@ export default function PlannerPage() {
               Dicci la tua destinazione, le date, gli interessi e il budget. Waylo AI creerà un itinerario unico, giorno per giorno, solo per te.
             </p>
             <ItineraryForm onSubmit={handleSubmit} isLoading={isLoading} isUsageReady={isReady} />
+            {/* Messaggio utilizzo rimosso per la prototipazione */}
+            {/*
             {isReady && (
                  <p className="text-sm text-muted-foreground mt-4">
                  Hai ancora {3 - getUsage().count} itinerari rimanenti per questo mese.
                </p>
             )}
+            */}
           </section>
 
           <section id="itinerary-section">
