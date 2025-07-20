@@ -1,9 +1,9 @@
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,7 +26,7 @@ const InfoCard = ({ icon, title, content, className }: { icon: React.ReactNode, 
 const ActivityCard = ({ icon, timeOfDay, activity }: { icon: React.ReactNode, timeOfDay: string, activity: GenerateItineraryOutput['itinerary'][0]['morning']}) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${activity.coordinates.lat},${activity.coordinates.lng}`;
     return (
-        <div className="flex items-start gap-4 p-4 rounded-lg bg-card/50">
+        <div className="flex items-start gap-4 p-4 rounded-lg bg-background/50">
             <div className="text-primary mt-1">{icon}</div>
             <div className='flex-1'>
                 <p className="font-semibold text-foreground">{timeOfDay}</p>
@@ -71,21 +71,30 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="day-0" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {itinerary.map((day, index) => (
-                        <TabsTrigger key={index} value={`day-${index}`}>{day.day}</TabsTrigger>
-                    ))}
-                </TabsList>
-                {itinerary.map((day, index) => (
-                    <TabsContent key={index} value={`day-${index}`}>
-                    <div className="space-y-4 pt-4">
-                        <ActivityCard icon={<Coffee className="h-5 w-5" />} timeOfDay="Mattina" activity={day.morning} />
-                        <ActivityCard icon={<Utensils className="h-5 w-5" />} timeOfDay="Pranzo" activity={day.lunch} />
-                        <ActivityCard icon={<SunDim className="h-5 w-5" />} timeOfDay="Pomeriggio" activity={day.afternoon} />
-                        <ActivityCard icon={<Moon className="h-5 w-5" />} timeOfDay="Sera" activity={day.evening} />
-                    </div>
-                    </TabsContent>
-                ))}
+                  <ScrollArea className="w-full whitespace-nowrap">
+                    <TabsList className="p-0 bg-transparent">
+                        {itinerary.map((day, index) => (
+                            <TabsTrigger 
+                                key={index} 
+                                value={`day-${index}`}
+                                className="mx-1 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-card data-[state=inactive]:text-foreground"
+                            >
+                                {day.day}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <ScrollBar orientation="horizontal" />
+                  </ScrollArea>
+                  {itinerary.map((day, index) => (
+                      <TabsContent key={index} value={`day-${index}`}>
+                      <div className="space-y-4 pt-4 border-t mt-4">
+                          <ActivityCard icon={<Coffee className="h-5 w-5" />} timeOfDay="Mattina" activity={day.morning} />
+                          <ActivityCard icon={<Utensils className="h-5 w-5" />} timeOfDay="Pranzo" activity={day.lunch} />
+                          <ActivityCard icon={<SunDim className="h-5 w-5" />} timeOfDay="Pomeriggio" activity={day.afternoon} />
+                          <ActivityCard icon={<Moon className="h-5 w-5" />} timeOfDay="Sera" activity={day.evening} />
+                      </div>
+                      </TabsContent>
+                  ))}
                 </Tabs>
             </CardContent>
           </Card>
