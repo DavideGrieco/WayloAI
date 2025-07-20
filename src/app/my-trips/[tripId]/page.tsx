@@ -80,7 +80,7 @@ export default function SavedTripPage() {
   }
 
   const handleEditRequest = async () => {
-    if (!editRequest || !trip) return;
+    if (!editRequest || !trip || !trip.formValues) return;
     setIsEditing(true);
 
     try {
@@ -91,20 +91,19 @@ export default function SavedTripPage() {
           destination: trip.destination,
           startDate: trip.startDate,
           endDate: trip.endDate,
-          // These fields might not be available in old data, so we add fallbacks
-          interests: trip.formValues?.interests || '', 
-          budget: trip.formValues?.budget || '',
-          travelerType: trip.formValues?.travelerType || 'Coppia',
-          travelPace: trip.formValues?.travelPace || 'Moderato',
-          arrivalTime: trip.formValues?.arrivalTime,
-          departureTime: trip.formValues?.departureTime,
-          hotelName: trip.formValues?.hotelName
+          interests: trip.formValues.interests, 
+          budget: trip.formValues.budget,
+          travelerType: trip.formValues.travelerType,
+          travelPace: trip.formValues.travelPace,
+          arrivalTime: trip.formValues.arrivalTime,
+          departureTime: trip.formValues.departureTime,
+          hotelName: trip.formValues.hotelName,
         }
       };
       
       const updatedItinerary = await editItinerary(input);
 
-      const updatedTripData = {
+      const updatedTripData: TripData = {
         ...trip,
         itineraryData: updatedItinerary,
       };

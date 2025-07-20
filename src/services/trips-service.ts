@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -14,25 +15,46 @@ export interface TripData {
     endDate: string;
     itineraryData: GenerateItineraryOutput;
     packingListData: GeneratePackingListOutput | null;
-    formValues?: ItineraryFormValues | null;
+    formValues: ItineraryFormValues | null;
     createdAt: any; 
 }
+
+// Interface for how trip data is stored in Firestore
+interface TripDocument {
+    userId: string;
+    destination: string;
+    startDate: string;
+    endDate: string;
+    itineraryData: GenerateItineraryOutput;
+    packingListData: GeneratePackingListOutput | null;
+    formValues: Omit<ItineraryFormValues, 'dates'> & {
+        dates: {
+            from: string;
+            to: string;
+        }
+    } | null;
+    createdAt: any;
+}
+
 
 /**
  * Salva un nuovo viaggio nel database.
  */
 export async function saveTrip(tripData: Omit<TripData, 'id' | 'createdAt'>): Promise<{ id: string }> {
   try {
+    const dataToSave: Omit<TripDocument, 'createdAt'> = {
+        ...tripData,
+        formValues: tripData.formValues ? {
+            ...tripData.formValues,
+            dates: {
+                from: tripData.formValues.dates.from.toISOString(),
+                to: tripData.formValues.dates.to.toISOString(),
+            }
+        } : null
+    };
+
     const docRef = await addDoc(collection(db, 'trips'), {
-      ...tripData,
-      // Convert dates to string to ensure they are serializable for Firestore
-      formValues: tripData.formValues ? {
-        ...tripData.formValues,
-        dates: {
-          from: tripData.formValues.dates.from.toISOString(),
-          to: tripData.formValues.dates.to.toISOString(),
-        }
-      } : null,
+      ...dataToSave,
       createdAt: serverTimestamp(),
     });
     return { id: docRef.id };
@@ -42,6 +64,34 @@ export async function saveTrip(tripData: Omit<TripData, 'id' | 'createdAt'>): Pr
   }
 }
 
+function docToTripData(doc: any): TripData {
+    const data = doc.data() as TripDocument;
+    
+    let formValues: ItineraryFormValues | null = null;
+    if (data.formValues) {
+        formValues = {
+            ...data.formValues,
+            dates: {
+                from: new Date(data.formValues.dates.from),
+                to: new Date(data.formValues.dates.to)
+            }
+        };
+    }
+
+    return {
+        id: doc.id,
+        userId: data.userId,
+        destination: data.destination,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        itineraryData: data.itineraryData,
+        packingListData: data.packingListData,
+        formValues: formValues,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
+    };
+}
+
+
 /**
  * Recupera tutti i viaggi per un dato utente.
  */
@@ -49,26 +99,7 @@ export async function getTripsForUser(userId: string): Promise<TripData[]> {
     try {
         const q = query(collection(db, "trips"), where("userId", "==", userId));
         const querySnapshot = await getDocs(q);
-        const trips: TripData[] = [];
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const formValues = data.formValues ? {
-                ...data.formValues,
-                dates: {
-                    from: new Date(data.formValues.dates.from),
-                    to: new Date(data.formValues.dates.to)
-                }
-            } : null;
-            trips.push({
-                id: doc.id,
-                ...data,
-                formValues,
-                startDate: data.startDate,
-                endDate: data.endDate,
-                createdAt: data.createdAt?.toDate().toISOString(),
-            } as TripData);
-        });
-        return trips;
+        return querySnapshot.docs.map(docToTripData);
     } catch (error) {
         console.error("Errore nel recuperare i viaggi:", error);
         throw new Error("Impossibile recuperare i viaggi.");
@@ -84,22 +115,7 @@ export async function getTripById(tripId: string): Promise<TripData | null> {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-            const data = docSnap.data();
-             const formValues = data.formValues ? {
-                ...data.formValues,
-                dates: {
-                    from: new Date(data.formValues.dates.from),
-                    to: new Date(data.formValues.dates.to)
-                }
-            } : null;
-            return {
-                id: docSnap.id,
-                ...data,
-                 formValues,
-                 startDate: data.startDate,
-                 endDate: data.endDate,
-                 createdAt: data.createdAt?.toDate().toISOString(),
-            } as TripData;
+            return docToTripData(docSnap);
         } else {
             return null;
         }
@@ -129,7 +145,20 @@ export async function deleteTrip(tripId: string): Promise<void> {
 export async function updateTrip(tripId: string, updates: Partial<TripData>): Promise<void> {
     try {
         const docRef = doc(db, 'trips', tripId);
-        await updateDoc(docRef, updates);
+        
+        let dataToUpdate: Partial<TripDocument> = { ...updates };
+
+        if (updates.formValues) {
+            dataToUpdate.formValues = {
+                ...updates.formValues,
+                 dates: {
+                    from: updates.formValues.dates.from.toISOString(),
+                    to: updates.formValues.dates.to.toISOString(),
+                }
+            };
+        }
+        
+        await updateDoc(docRef, dataToUpdate);
     } catch (error) {
         console.error('Errore durante l\'aggiornamento del viaggio:', error);
         throw new Error('Impossibile aggiornare il viaggio.');
