@@ -227,9 +227,9 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
         )}
       </div>
     );
-  };
+};
   
-  export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip = false, formValues }: ItineraryDisplayProps) {
+export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip = false, formValues }: ItineraryDisplayProps) {
     const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = itineraryData;
     const { user, isPremium } = useAuth();
     const { toast } = useToast();
@@ -418,4 +418,6 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
         </Tabs>
       </div>
     );
-  }
+}
+
+    
