@@ -21,10 +21,25 @@ const GenerateItineraryInputSchema = z.object({
 
 export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema>;
 
+const ItineraryDaySchema = z.object({
+    day: z.string().describe("Il giorno dell'itinerario (es. Giorno 1, Giorno 2)."),
+    morning: z.string().describe("Attività per la mattina."),
+    lunch: z.string().describe("Suggerimento per il pranzo."),
+    afternoon: z.string().describe("Attività per il pomeriggio."),
+    evening: z.string().describe("Attività per la sera."),
+});
+
+const CostEstimatesSchema = z.object({
+    accommodation: z.string().describe("Stima dei costi per l'alloggio (es. '100€-200€/notte')."),
+    transport: z.string().describe("Stima dei costi per i trasporti (es. '20€/giorno')."),
+    meals: z.string().describe("Stima dei costi per i pasti (es. '50€/giorno')."),
+    activities: z.string().describe("Stima dei costi per le attività (es. '30€/giorno')."),
+});
+
 const GenerateItineraryOutputSchema = z.object({
-  itinerary: z.string().describe('Un itinerario in formato JSON con attività giornaliere, fasce orarie e descrizioni.'),
+  itinerary: z.array(ItineraryDaySchema).describe('Un itinerario con attività giornaliere, fasce orarie e descrizioni.'),
   accommodationSuggestions: z.string().describe('Aree consigliate in cui soggiornare, compatibili con le preferenze dell\'utente.'),
-  costEstimates: z.string().describe('Stime dettagliate dei costi suddivise in alloggio, trasporti, pasti e attività.'),
+  costEstimates: CostEstimatesSchema.describe('Stime dettagliate dei costi suddivise in alloggio, trasporti, pasti e attività.'),
   weatherForecast: z.string().describe('Previsioni meteorologiche essenziali per la durata del viaggio e attività alternative in caso di maltempo.'),
 });
 
@@ -38,7 +53,7 @@ const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: GenerateItineraryInputSchema},
   output: {schema: GenerateItineraryOutputSchema},
-  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano.
+  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido.
 
   Destinazione: {{destination}}
   Data di inizio: {{startDate}}
@@ -60,7 +75,7 @@ const itineraryPrompt = ai.definePrompt({
   - Il tono deve essere pratico, chiaro e amichevole.
   - Assumi la persona di un "viaggio in tasca".
 
-  Esempio di Output:
+  Esempio di Output JSON:
   {
     "itinerary": [
       {
@@ -88,7 +103,7 @@ const itineraryPrompt = ai.definePrompt({
     "weatherForecast": "Soleggiato, 25°C. In caso di pioggia, visita musei come il Museo Picasso."
   }
 
-  Restituisci l'output in formato JSON.
+  Restituisci l'output ESCLUSIVAMENTE in formato JSON valido. Non includere testo o commenti al di fuori del JSON.
   `,
 });
 
@@ -100,6 +115,16 @@ const generateItineraryFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await itineraryPrompt(input);
+    
+    // A volte l'AI potrebbe restituire il JSON come una stringa dentro un'altra stringa.
+    if (typeof output === 'string') {
+        try {
+            return JSON.parse(output) as GenerateItineraryOutput;
+        } catch (e) {
+            console.error("Failed to parse stringified JSON from AI, returning raw output.", e);
+        }
+    }
+    
     return output!;
   }
 );

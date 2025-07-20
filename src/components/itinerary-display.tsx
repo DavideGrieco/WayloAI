@@ -1,25 +1,10 @@
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
-import { useMemo } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet } from 'lucide-react';
-
-type ItineraryDay = {
-  day: string;
-  morning: string;
-  lunch: string;
-  afternoon: string;
-  evening: string;
-};
-type CostEstimates = {
-  accommodation: string;
-  transport: string;
-  meals: string;
-  activities: string;
-};
 
 interface ItineraryDisplayProps {
   data: GenerateItineraryOutput;
@@ -39,63 +24,21 @@ const InfoCard = ({ icon, title, content }: { icon: React.ReactNode, title: stri
 
 
 export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
-  const parsedItinerary = useMemo(() => {
-    try {
-      // The AI might return a stringified JSON that is itself inside a string.
-      const firstParse = JSON.parse(data.itinerary);
-      if (typeof firstParse === 'string') {
-        return JSON.parse(firstParse).itinerary as ItineraryDay[];
-      }
-      return (firstParse.itinerary || firstParse) as ItineraryDay[];
-    } catch (e) {
-      console.error('Failed to parse itinerary:', e, data.itinerary);
-      return null;
-    }
-  }, [data.itinerary]);
-
-  const parsedCosts = useMemo(() => {
-    try {
-       // AI might return a stringified JSON inside a string.
-      const firstParse = JSON.parse(data.costEstimates);
-      if (typeof firstParse === 'string') {
-          const secondParse = JSON.parse(firstParse);
-          return (Array.isArray(secondParse) ? secondParse[0] : secondParse) as CostEstimates
-      }
-      return (Array.isArray(firstParse) ? firstParse[0] : firstParse) as CostEstimates;
-    } catch (e) {
-      console.error('Failed to parse cost estimates:', e, data.costEstimates);
-       try {
-        // Fallback for when the AI returns a raw object string instead of JSON
-        const estimates = data.costEstimates.match(/accommodation:\s*"([^"]+)",\s*transport:\s*"([^"]+)",\s*meals:\s*"([^"]+)",\s*activities:\s*"([^"]+)"/);
-        if(estimates) {
-            return {
-                accommodation: estimates[1],
-                transport: estimates[2],
-                meals: estimates[3],
-                activities: estimates[4],
-            };
-        }
-        return null;
-       } catch (fallbackError) {
-        console.error('Fallback parsing failed for costs:', fallbackError);
-        return null;
-       }
-    }
-  }, [data.costEstimates]);
+  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast } = data;
 
   return (
     <div className="space-y-8">
       <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {parsedCosts ? (
+        {costEstimates ? (
             <>
-                <InfoCard icon={<Wallet className="h-4 w-4" />} title="Alloggio" content={parsedCosts.accommodation} />
-                <InfoCard icon={<Bus className="h-4 w-4" />} title="Trasporti" content={parsedCosts.transport} />
-                <InfoCard icon={<Utensils className="h-4 w-4" />} title="Pasti" content={parsedCosts.meals} />
-                <InfoCard icon={<MapPin className="h-4 w-4" />} title="Attività" content={parsedCosts.activities} />
+                <InfoCard icon={<Wallet className="h-4 w-4" />} title="Alloggio" content={costEstimates.accommodation} />
+                <InfoCard icon={<Bus className="h-4 w-4" />} title="Trasporti" content={costEstimates.transport} />
+                <InfoCard icon={<Utensils className="h-4 w-4" />} title="Pasti" content={costEstimates.meals} />
+                <InfoCard icon={<MapPin className="h-4 w-4" />} title="Attività" content={costEstimates.activities} />
             </>
-        ) : <Card><CardContent><p className="p-4">{data.costEstimates}</p></CardContent></Card>}
+        ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
       </div>
 
       <Card>
@@ -103,9 +46,9 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
           <CardTitle>Piano Giornaliero</CardTitle>
         </CardHeader>
         <CardContent>
-          {parsedItinerary ? (
-            <Accordion type="single" collapsible className="w-full">
-              {parsedItinerary.map((day, index) => (
+          {itinerary && itinerary.length > 0 ? (
+            <Accordion type="single" collapsible className="w-full" defaultValue="item-0">
+              {itinerary.map((day, index) => (
                 <AccordionItem value={`item-${index}`} key={index}>
                   <AccordionTrigger className="text-lg font-semibold">{day.day}</AccordionTrigger>
                   <AccordionContent className="space-y-4 pl-2">
@@ -130,7 +73,7 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
               ))}
             </Accordion>
           ) : (
-            <p className="text-muted-foreground">{data.itinerary}</p>
+            <p className="text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
           )}
         </CardContent>
       </Card>
@@ -142,7 +85,7 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
                 <CardTitle>Dove Alloggiare</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground">{data.accommodationSuggestions}</p>
+                <p className="text-muted-foreground">{accommodationSuggestions}</p>
             </CardContent>
         </Card>
         <Card>
@@ -152,7 +95,7 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
                 <CardTitle>Meteo e Piani di Riserva</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground">{data.weatherForecast}</p>
+                <p className="text-muted-foreground">{weatherForecast}</p>
             </CardContent>
         </Card>
       </div>
