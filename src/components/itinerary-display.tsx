@@ -4,7 +4,7 @@ import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon, AlertTriangle, Building } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ItineraryDisplayProps {
@@ -45,9 +45,31 @@ const ActivityCard = ({ icon, timeOfDay, activity }: { icon: React.ReactNode, ti
     )
 };
 
+const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput['accommodationSuggestions'][0] }) => {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${suggestion.coordinates.lat},${suggestion.coordinates.lng}`;
+    return (
+      <div className="flex items-start gap-4 py-4 not-last:border-b">
+        <div className="text-primary mt-1"><Building className="h-5 w-5" /></div>
+        <div className='flex-1'>
+          <p className="font-semibold text-foreground">{suggestion.name} - <span className="font-normal text-muted-foreground">{suggestion.zone}</span></p>
+          <p className="text-sm text-muted-foreground mt-1">{suggestion.description}</p>
+          <a 
+            href={mapsUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-2"
+          >
+            <MapPin className="h-3 w-3" />
+            Vedi su Google Maps
+          </a>
+        </div>
+      </div>
+    );
+  };
+
 
 export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
-  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast } = data;
+  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues } = data;
 
   return (
     <div className="space-y-8">
@@ -106,14 +128,34 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
             </Card>
         )}
       
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-1">
         <Card>
             <CardHeader className="flex flex-row items-center gap-2 space-y-0">
                 <BedDouble className="h-6 w-6 text-primary" />
                 <CardTitle>Dove Alloggiare</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground">{accommodationSuggestions}</p>
+                {accommodationSuggestions && accommodationSuggestions.length > 0 ? (
+                    <div className="space-y-2">
+                        {accommodationSuggestions.map((suggestion, index) => (
+                            <AccommodationCard key={index} suggestion={suggestion} />
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground">Nessun suggerimento specifico per l'alloggio disponibile.</p>
+                )}
+            </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+            <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+                <CardTitle>Avvisi di Viaggio</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-muted-foreground">{potentialIssues}</p>
             </CardContent>
         </Card>
         <Card>

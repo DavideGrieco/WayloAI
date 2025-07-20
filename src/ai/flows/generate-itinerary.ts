@@ -30,6 +30,16 @@ const ActivitySchema = z.object({
   }).describe("Coordinate geografiche per Google Maps."),
 });
 
+const AccommodationSuggestionSchema = z.object({
+    name: z.string().describe("Nome dell'hotel o della struttura ricettiva."),
+    zone: z.string().describe("La zona o il quartiere in cui si trova."),
+    description: z.string().describe("Breve descrizione dell'hotel e perché è consigliato."),
+    coordinates: z.object({
+        lat: z.number().describe("La latitudine del luogo."),
+        lng: z.number().describe("La longitudine del luogo."),
+    }).describe("Coordinate geografiche per Google Maps."),
+});
+
 const ItineraryDaySchema = z.object({
     day: z.string().describe("Il giorno dell'itinerario (es. Giorno 1, Giorno 2)."),
     morning: ActivitySchema.describe("Attività per la mattina."),
@@ -47,7 +57,8 @@ const CostEstimatesSchema = z.object({
 
 const GenerateItineraryOutputSchema = z.object({
   itinerary: z.array(ItineraryDaySchema).describe('Un itinerario con attività giornaliere, fasce orarie e descrizioni.'),
-  accommodationSuggestions: z.string().describe('Aree consigliate in cui soggiornare, compatibili con le preferenze dell\'utente.'),
+  accommodationSuggestions: z.array(AccommodationSuggestionSchema).describe('Suggerimenti specifici per l\'alloggio, con nome, zona, descrizione e coordinate.'),
+  potentialIssues: z.string().describe("Avvisi su potenziali problemi come zone pericolose, costi elevati, problemi di trasporto, ecc."),
   costEstimates: CostEstimatesSchema.describe('Stime dettagliate dei costi suddivise in alloggio, trasporti, pasti e attività.'),
   weatherForecast: z.string().describe('Previsioni meteorologiche essenziali per la durata del viaggio e attività alternative in caso di maltempo.'),
 });
@@ -62,7 +73,7 @@ const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: GenerateItineraryInputSchema},
   output: {schema: GenerateItineraryOutputSchema},
-  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido. Per ogni attività, fornisci una descrizione, il nome del luogo e le coordinate geografiche (latitudine e longitudine).
+  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido. Per ogni attività e suggerimento di alloggio, fornisci coordinate geografiche REALI e PRECISE.
 
   Destinazione: {{destination}}
   Data di inizio: {{startDate}}
@@ -74,11 +85,11 @@ const itineraryPrompt = ai.definePrompt({
   1. Genera un itinerario giorno per giorno con attività suddivise per fasce orarie (mattina, pranzo, pomeriggio, sera).
   2. Per ogni attività (morning, lunch, afternoon, evening), fornisci un oggetto con 'description', 'location', e 'coordinates' (lat, lng).
   3. Ottimizza l'itinerario geograficamente per evitare spostamenti inutili.
-  4. Raccomanda aree in cui soggiornare, compatibili con le preferenze dell'utente.
-  5. Fornisci previsioni meteorologiche essenziali e attività alternative in caso di maltempo.
-  6. Fornisci una stima dettagliata dei costi suddivisa in alloggio, trasporti, pasti e attività.
-  7. Trova coordinate geografiche REALI e PRECISE per ogni luogo.
-
+  4. Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'). Ogni suggerimento deve essere un oggetto con 'name' (es. 'Hotel Roma'), 'zone' (es. 'Centro Storico'), 'description', e 'coordinates' (lat, lng).
+  5. Fornisci avvisi su potenziali problemi ('potentialIssues') come zone pericolose, costi elevati, problemi con i trasporti, ecc.
+  6. Fornisci previsioni meteorologiche essenziali ('weatherForecast') e attività alternative in caso di maltempo.
+  7. Fornisci una stima dettagliata dei costi ('costEstimates') suddivisa in alloggio, trasporti, pasti e attività.
+  
   Requisiti di output:
   - L'itinerario deve essere realistico, credibile e adatto a una vera guida di viaggio.
   - Il tono deve essere pratico, chiaro e amichevole.
@@ -95,12 +106,16 @@ const itineraryPrompt = ai.definePrompt({
         "evening": { "description": "Spettacolo di Flamenco", "location": "Tarantos", "coordinates": { "lat": 41.3825, "lng": 2.1769 } }
       }
     ],
-    "accommodationSuggestions": "Quartiere Gotico, Eixample",
+    "accommodationSuggestions": [
+        { "name": "Hotel Colonial", "zone": "Quartiere Gotico", "description": "Ottimo hotel 4 stelle nel cuore del centro storico, vicino a molte attrazioni.", "coordinates": { "lat": 41.3854, "lng": 2.1802 } },
+        { "name": "Praktik Rambla", "zone": "Eixample", "description": "Boutique hotel con un design unico, perfetto per chi ama lo shopping e l'architettura.", "coordinates": { "lat": 41.3904, "lng": 2.1658 } }
+    ],
+    "potentialIssues": "Attenzione ai borseggiatori nelle zone turistiche affollate come La Rambla. I taxi possono essere costosi; preferire la metropolitana.",
     "costEstimates": {
-      "accommodation": "100€-200€/notte",
-      "transport": "20€/giorno",
-      "meals": "50€/giorno",
-      "activities": "30€/giorno"
+      "accommodation": "120€-250€/notte",
+      "transport": "25€/giorno",
+      "meals": "60€/giorno",
+      "activities": "40€/giorno"
     },
     "weatherForecast": "Soleggiato, 25°C. In caso di pioggia, visita musei come il Museo Picasso."
   }
