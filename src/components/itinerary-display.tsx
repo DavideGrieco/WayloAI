@@ -20,7 +20,7 @@ interface ItineraryDisplayProps {
   itineraryData: GenerateItineraryOutput;
   packingListData: GeneratePackingListOutput | null;
   isSavedTrip?: boolean;
-  formValues?: ItineraryFormValues; 
+  formValues?: ItineraryFormValues | null; 
 }
 
 const InfoCard = ({ icon, title, content, className }: { icon: React.ReactNode, title: string, content: string | React.ReactNode, className?: string }) => (
@@ -150,6 +150,13 @@ const getPackingItemIcon = (itemName: string): React.ReactNode => {
 
 
 const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutput, isPremium: boolean }) => {
+    if (!data || !data.packingList) {
+      return (
+        <Card className="mt-6">
+          <CardContent><p className="p-4 text-muted-foreground">Lista valigia non disponibile per questo viaggio.</p></CardContent>
+        </Card>
+      );
+    }
     const visibleCategoriesCount = isPremium ? data.packingList.length : Math.ceil(data.packingList.length / 4);
     const visibleCategories = data.packingList.slice(0, visibleCategoriesCount);
     const hiddenCategories = data.packingList.slice(visibleCategoriesCount);
@@ -228,7 +235,9 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
     const { toast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
   
-    const visibleDaysCount = isPremium || isSavedTrip ? itinerary.length : Math.ceil(itinerary.length / 4);
+    const finalIsPremium = isPremium || isSavedTrip;
+
+    const visibleDaysCount = finalIsPremium ? itinerary.length : Math.ceil(itinerary.length / 4);
     const visibleDays = itinerary.slice(0, visibleDaysCount);
     const hiddenDaysCount = itinerary.length - visibleDaysCount;
     
@@ -243,6 +252,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
                 endDate: formValues.dates.to.toISOString(),
                 itineraryData: itineraryData,
                 packingListData: packingListData,
+                formValues: formValues,
             });
             toast({
                 title: "Viaggio salvato!",
@@ -306,7 +316,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
                                           {day.day}
                                       </TabsTrigger>
                                   ))}
-                                  {(!isPremium && !isSavedTrip) && hiddenDaysCount > 0 && (
+                                  {!finalIsPremium && hiddenDaysCount > 0 && (
                                     <div className="inline-flex items-center mx-1 px-3 py-1.5 text-sm font-medium text-muted-foreground">
                                         + {hiddenDaysCount} giorni bloccati
                                     </div>
@@ -321,7 +331,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
                                   </div>
                               </TabsContent>
                           ))}
-                           {(!isPremium && !isSavedTrip) && hiddenDaysCount > 0 && (
+                           {!finalIsPremium && hiddenDaysCount > 0 && (
                                 <div className="relative mt-4 pt-6 border-t">
                                     <div className="blur-md pointer-events-none">
                                         <p className='font-bold text-foreground'>Giorno {visibleDaysCount + 1}: Attività bloccata</p>
@@ -384,7 +394,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
                           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
                               <AlertTriangle className="h-6 w-6 text-destructive" />
                               <CardTitle>Avvisi di Viaggio</CardTitle>
-                          </CardHeader>
+                          </Header>
                           <CardContent>
                               <p className="text-muted-foreground">{potentialIssues}</p>
                           </CardContent>
@@ -403,10 +413,9 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
               </div>
           </TabsContent>
           <TabsContent value="packing">
-              {packingListData ? <PackingListDisplay data={packingListData} isPremium={isPremium || isSavedTrip} /> : <p>Lista valigia in preparazione...</p>}
+              {packingListData ? <PackingListDisplay data={packingListData} isPremium={finalIsPremium} /> : <p>Lista valigia in preparazione...</p>}
           </TabsContent>
         </Tabs>
       </div>
     );
   }
-  
