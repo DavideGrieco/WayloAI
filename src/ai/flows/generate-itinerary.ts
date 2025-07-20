@@ -21,12 +21,21 @@ const GenerateItineraryInputSchema = z.object({
 
 export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema>;
 
+const ActivitySchema = z.object({
+  description: z.string().describe("Descrizione dell'attività o del luogo."),
+  location: z.string().describe("Nome del luogo (es. 'Colosseo', 'Ristorante da Mario')."),
+  coordinates: z.object({
+    lat: z.number().describe("La latitudine del luogo."),
+    lng: z.number().describe("La longitudine del luogo."),
+  }).describe("Coordinate geografiche per Google Maps."),
+});
+
 const ItineraryDaySchema = z.object({
     day: z.string().describe("Il giorno dell'itinerario (es. Giorno 1, Giorno 2)."),
-    morning: z.string().describe("Attività per la mattina."),
-    lunch: z.string().describe("Suggerimento per il pranzo."),
-    afternoon: z.string().describe("Attività per il pomeriggio."),
-    evening: z.string().describe("Attività per la sera."),
+    morning: ActivitySchema.describe("Attività per la mattina."),
+    lunch: ActivitySchema.describe("Suggerimento per il pranzo."),
+    afternoon: ActivitySchema.describe("Attività per il pomeriggio."),
+    evening: ActivitySchema.describe("Attività per la sera."),
 });
 
 const CostEstimatesSchema = z.object({
@@ -53,7 +62,7 @@ const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: GenerateItineraryInputSchema},
   output: {schema: GenerateItineraryOutputSchema},
-  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido.
+  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido. Per ogni attività, fornisci una descrizione, il nome del luogo e le coordinate geografiche (latitudine e longitudine).
 
   Destinazione: {{destination}}
   Data di inizio: {{startDate}}
@@ -63,15 +72,15 @@ const itineraryPrompt = ai.definePrompt({
 
   Istruzioni:
   1. Genera un itinerario giorno per giorno con attività suddivise per fasce orarie (mattina, pranzo, pomeriggio, sera).
-  2. Fornisci suggerimenti su cosa fare, orari consigliati e durata di ogni attività.
+  2. Per ogni attività (morning, lunch, afternoon, evening), fornisci un oggetto con 'description', 'location', e 'coordinates' (lat, lng).
   3. Ottimizza l'itinerario geograficamente per evitare spostamenti inutili.
   4. Raccomanda aree in cui soggiornare, compatibili con le preferenze dell'utente.
   5. Fornisci previsioni meteorologiche essenziali e attività alternative in caso di maltempo.
   6. Fornisci una stima dettagliata dei costi suddivisa in alloggio, trasporti, pasti e attività.
+  7. Trova coordinate geografiche REALI e PRECISE per ogni luogo.
 
   Requisiti di output:
   - L'itinerario deve essere realistico, credibile e adatto a una vera guida di viaggio.
-  - L'itinerario deve essere strutturato in formato JSON per una facile integrazione in un'interfaccia utente.
   - Il tono deve essere pratico, chiaro e amichevole.
   - Assumi la persona di un "viaggio in tasca".
 
@@ -80,17 +89,10 @@ const itineraryPrompt = ai.definePrompt({
     "itinerary": [
       {
         "day": "Giorno 1",
-        "morning": "Visita alla Sagrada Familia",
-        "lunch": "Pranzo a base di tapas a Ciudad Condal",
-        "afternoon": "Passeggiata nel Parco Güell",
-        "evening": "Spettacolo di Flamenco nel Quartiere Gotico"
-      },
-      {
-        "day": "Giorno 2",
-        "morning": "Esplorazione del Quartiere Gotico",
-        "lunch": "Paella vicino alla spiaggia della Barceloneta",
-        "afternoon": "Relax sulla spiaggia della Barceloneta",
-        "evening": "Cena in un ristorante con terrazza panoramica"
+        "morning": { "description": "Visita alla Sagrada Familia", "location": "Sagrada Familia", "coordinates": { "lat": 41.4036, "lng": 2.1744 } },
+        "lunch": { "description": "Pranzo a base di tapas", "location": "Ciudad Condal", "coordinates": { "lat": 41.3917, "lng": 2.1645 } },
+        "afternoon": { "description": "Passeggiata nel Parco Güell", "location": "Parco Güell", "coordinates": { "lat": 41.4145, "lng": 2.1527 } },
+        "evening": { "description": "Spettacolo di Flamenco", "location": "Tarantos", "coordinates": { "lat": 41.3825, "lng": 2.1769 } }
       }
     ],
     "accommodationSuggestions": "Quartiere Gotico, Eixample",

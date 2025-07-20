@@ -1,26 +1,48 @@
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon } from 'lucide-react';
 
 interface ItineraryDisplayProps {
   data: GenerateItineraryOutput;
 }
 
-const InfoCard = ({ icon, title, content }: { icon: React.ReactNode, title: string, content: string | React.ReactNode }) => (
-  <Card>
+const InfoCard = ({ icon, title, content, className }: { icon: React.ReactNode, title: string, content: string | React.ReactNode, className?: string }) => (
+  <Card className={cn("shadow-md", className)}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
       <CardTitle className="text-sm font-medium">{title}</CardTitle>
       <div className="text-muted-foreground">{icon}</div>
     </CardHeader>
     <CardContent>
-      <div className="text-lg font-bold">{content}</div>
+      <div className="text-xl font-bold">{content}</div>
     </CardContent>
   </Card>
 );
+
+const ActivityCard = ({ icon, timeOfDay, activity }: { icon: React.ReactNode, timeOfDay: string, activity: GenerateItineraryOutput['itinerary'][0]['morning']}) => {
+    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${activity.coordinates.lat},${activity.coordinates.lng}`;
+    return (
+        <div className="flex items-start gap-4 p-4 rounded-lg bg-card/50">
+            <div className="text-primary mt-1">{icon}</div>
+            <div className='flex-1'>
+                <p className="font-semibold text-foreground">{timeOfDay}</p>
+                <p className="text-muted-foreground">{activity.description}</p>
+                <a 
+                    href={mapsUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-1"
+                >
+                    <MapPin className="h-3 w-3" />
+                    {activity.location}
+                </a>
+            </div>
+        </div>
+    )
+};
 
 
 export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
@@ -33,50 +55,46 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {costEstimates ? (
             <>
-                <InfoCard icon={<Wallet className="h-4 w-4" />} title="Alloggio" content={costEstimates.accommodation} />
-                <InfoCard icon={<Bus className="h-4 w-4" />} title="Trasporti" content={costEstimates.transport} />
-                <InfoCard icon={<Utensils className="h-4 w-4" />} title="Pasti" content={costEstimates.meals} />
-                <InfoCard icon={<MapPin className="h-4 w-4" />} title="Attività" content={costEstimates.activities} />
+                <InfoCard icon={<Wallet className="h-5 w-5" />} title="Alloggio" content={costEstimates.accommodation} className="bg-blue-50 dark:bg-blue-900/20" />
+                <InfoCard icon={<Bus className="h-5 w-5" />} title="Trasporti" content={costEstimates.transport} className="bg-green-50 dark:bg-green-900/20" />
+                <InfoCard icon={<Utensils className="h-5 w-5" />} title="Pasti" content={costEstimates.meals} className="bg-orange-50 dark:bg-orange-900/20" />
+                <InfoCard icon={<ShoppingBag className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
             </>
         ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Piano Giornaliero</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {itinerary && itinerary.length > 0 ? (
-            <Accordion type="single" collapsible className="w-full" defaultValue="item-0">
-              {itinerary.map((day, index) => (
-                <AccordionItem value={`item-${index}`} key={index}>
-                  <AccordionTrigger className="text-lg font-semibold">{day.day}</AccordionTrigger>
-                  <AccordionContent className="space-y-4 pl-2">
-                    <div className="flex items-start gap-4">
-                      <Badge variant="secondary" className="mt-1">Mattina</Badge>
-                      <p className="text-muted-foreground">{day.morning}</p>
+        {itinerary && itinerary.length > 0 ? (
+          <Card>
+            <CardHeader>
+                <CardTitle>Piano Giornaliero</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="day-0" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {itinerary.map((day, index) => (
+                        <TabsTrigger key={index} value={`day-${index}`}>{day.day}</TabsTrigger>
+                    ))}
+                </TabsList>
+                {itinerary.map((day, index) => (
+                    <TabsContent key={index} value={`day-${index}`}>
+                    <div className="space-y-4 pt-4">
+                        <ActivityCard icon={<Coffee className="h-5 w-5" />} timeOfDay="Mattina" activity={day.morning} />
+                        <ActivityCard icon={<Utensils className="h-5 w-5" />} timeOfDay="Pranzo" activity={day.lunch} />
+                        <ActivityCard icon={<SunDim className="h-5 w-5" />} timeOfDay="Pomeriggio" activity={day.afternoon} />
+                        <ActivityCard icon={<Moon className="h-5 w-5" />} timeOfDay="Sera" activity={day.evening} />
                     </div>
-                    <div className="flex items-start gap-4">
-                      <Badge variant="secondary" className="mt-1">Pranzo</Badge>
-                      <p className="text-muted-foreground">{day.lunch}</p>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <Badge variant="secondary" className="mt-1">Pomeriggio</Badge>
-                      <p className="text-muted-foreground">{day.afternoon}</p>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <Badge variant="secondary" className="mt-1">Sera</Badge>
-                      <p className="text-muted-foreground">{day.evening}</p>
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          ) : (
-            <p className="text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
-          )}
-        </CardContent>
-      </Card>
+                    </TabsContent>
+                ))}
+                </Tabs>
+            </CardContent>
+          </Card>
+        ) : (
+            <Card>
+                <CardContent>
+                    <p className="p-6 text-center text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
+                </CardContent>
+            </Card>
+        )}
       
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
