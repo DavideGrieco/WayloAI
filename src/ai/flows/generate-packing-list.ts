@@ -11,7 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const GeneratePackingListInputSchema = z.object({
+const GeneratePackingListInputSchema = z.object({
   destination: z.string().describe('La città di destinazione del viaggio.'),
   startDate: z.string().describe('La data di inizio del viaggio (YYYY-MM-DD).'),
   endDate: z.string().describe('La data di fine del viaggio (YYYY-MM-DD).'),
@@ -31,7 +31,7 @@ const PackingCategorySchema = z.object({
     items: z.array(PackingItemSchema).describe('Elenco degli oggetti in questa categoria.'),
 });
 
-export const GeneratePackingListOutputSchema = z.object({
+const GeneratePackingListOutputSchema = z.object({
   packingList: z.array(PackingCategorySchema).describe('Una lista di cose da mettere in valigia, suddivisa per categorie.'),
   generalAdvice: z.string().describe('Un consiglio generale sulla preparazione della valigia per questa specifica destinazione e periodo.'),
 });
