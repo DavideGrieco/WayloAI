@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
+  isPremium: boolean; // Aggiunto per gestire lo stato dell'abbonamento
   loading: boolean;
   register: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
@@ -25,12 +27,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPremium, setIsPremium] = useState(false); // Stato per l'abbonamento
   const auth = getAuth(app);
   const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      // **Simulazione:** In un'app reale, questo valore verrebbe da un database (es. Firestore)
+      // o dai custom claims di Firebase Auth. Per ora, lo impostiamo a false.
+      setIsPremium(false); 
       setLoading(false);
     });
     return () => unsubscribe();
@@ -80,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
+    isPremium,
     loading,
     register,
     login,

@@ -6,9 +6,11 @@ import type { GeneratePackingListOutput } from '@/ai/flows/generate-packing-list
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { useAuth } from '@/context/auth-context';
+import { Button } from './ui/button';
 
 interface ItineraryDisplayProps {
   itineraryData: GenerateItineraryOutput;
@@ -141,172 +143,227 @@ const getPackingItemIcon = (itemName: string): React.ReactNode => {
 };
 
 
-const PackingListDisplay = ({ data }: { data: GeneratePackingListOutput }) => {
-  return (
-    <div className="space-y-6 pt-6">
-       <Card className="bg-accent/10 border-accent">
-          <CardHeader>
-            <CardTitle>Consiglio Pro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">{data.generalAdvice}</p>
-          </CardContent>
-      </Card>
-
-      <Accordion type="multiple" defaultValue={data.packingList.map(c => c.category)} className="w-full">
-        {data.packingList.map((category, index) => (
-          <AccordionItem key={index} value={category.category}>
-            <AccordionTrigger className="text-lg font-semibold">
-              <div className="flex items-center gap-3">
-                {getPackingCategoryIcon(category.category)}
-                {category.category}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <ul className="space-y-3 pl-4">
-                {category.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="flex flex-col p-2 rounded-md hover:bg-muted/50 transition-colors">
-                    <div className='flex items-center justify-between'>
-                      <div className="flex items-center gap-3">
-                        {getPackingItemIcon(item.name)}
-                        <span className="font-medium">{item.name}</span>
+const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutput, isPremium: boolean }) => {
+    const visibleCategoriesCount = isPremium ? data.packingList.length : Math.ceil(data.packingList.length / 4);
+    const visibleCategories = data.packingList.slice(0, visibleCategoriesCount);
+    const hiddenCategories = data.packingList.slice(visibleCategoriesCount);
+  
+    return (
+      <div className="space-y-6 pt-6">
+         <Card className="bg-accent/10 border-accent">
+            <CardHeader>
+              <CardTitle>Consiglio Pro</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{data.generalAdvice}</p>
+            </CardContent>
+        </Card>
+  
+        <Accordion type="multiple" defaultValue={visibleCategories.map(c => c.category)} className="w-full">
+          {visibleCategories.map((category, index) => (
+            <AccordionItem key={index} value={category.category}>
+              <AccordionTrigger className="text-lg font-semibold">
+                <div className="flex items-center gap-3">
+                  {getPackingCategoryIcon(category.category)}
+                  {category.category}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <ul className="space-y-3 pl-4">
+                  {category.items.map((item, itemIndex) => (
+                    <li key={itemIndex} className="flex flex-col p-2 rounded-md hover:bg-muted/50 transition-colors">
+                      <div className='flex items-center justify-between'>
+                        <div className="flex items-center gap-3">
+                          {getPackingItemIcon(item.name)}
+                          <span className="font-medium">{item.name}</span>
+                        </div>
+                        <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">{item.quantity}</span>
                       </div>
-                      <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">{item.quantity}</span>
-                    </div>
-                    {item.notes && <p className="text-xs text-muted-foreground mt-2 pl-7">{item.notes}</p>}
-                  </li>
+                      {item.notes && <p className="text-xs text-muted-foreground mt-2 pl-7">{item.notes}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+  
+        {!isPremium && hiddenCategories.length > 0 && (
+          <div className="relative mt-4">
+            <div className="blur-md pointer-events-none">
+              <Accordion type="multiple" className="w-full">
+                {hiddenCategories.map((category, index) => (
+                  <AccordionItem key={index} value={category.category}>
+                    <AccordionTrigger className="text-lg font-semibold">
+                      <div className="flex items-center gap-3">
+                        {getPackingCategoryIcon(category.category)}
+                        {category.category}
+                      </div>
+                    </AccordionTrigger>
+                  </AccordionItem>
                 ))}
-              </ul>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
-    </div>
-  );
-};
-
-export function ItineraryDisplay({ itineraryData, packingListData }: ItineraryDisplayProps) {
-  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = itineraryData;
-
-  return (
-    <div className="space-y-8">
-      <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
-      <Tabs defaultValue="itinerary" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="itinerary">Itinerario</TabsTrigger>
-            <TabsTrigger value="packing" disabled={!packingListData}>Valigia</TabsTrigger>
-        </TabsList>
-        <TabsContent value="itinerary">
-            <div className="space-y-8 pt-6">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {costEstimates ? (
-                        <>
-                            <InfoCard icon={<Wallet className="h-5 w-5" />} title="Alloggio" content={costEstimates.accommodation} className="bg-blue-50 dark:bg-blue-900/20" />
-                            <InfoCard icon={<Bus className="h-5 w-5" />} title="Trasporti" content={costEstimates.transport} className="bg-green-50 dark:bg-green-900/20" />
-                            <InfoCard icon={<Utensils className="h-5 w-5" />} title="Pasti" content={costEstimates.meals} className="bg-orange-50 dark:bg-orange-900/20" />
-                            <InfoCard icon={<Landmark className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
-                        </>
-                    ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
-                </div>
-
-                {itinerary && itinerary.length > 0 ? (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Piano Giornaliero</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Tabs defaultValue="day-0" className="w-full">
-                        <ScrollArea className="w-full whitespace-nowrap">
-                            <TabsList className="p-0 bg-transparent">
-                                {itinerary.map((day, index) => (
-                                    <TabsTrigger 
-                                        key={index} 
-                                        value={`day-${index}`}
-                                        className="mx-1 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-card data-[state=inactive]:text-foreground"
-                                    >
-                                        {day.day}
-                                    </TabsTrigger>
-                                ))}
-                            </TabsList>
-                            <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
-                        {itinerary.map((day, index) => (
-                            <TabsContent key={index} value={`day-${index}`}>
-                                <div className="pt-6 border-t mt-4">
-                                    <ActivityTimeline activities={day.activities} />
-                                </div>
-                            </TabsContent>
-                        ))}
-                        </Tabs>
-                    </CardContent>
-                </Card>
-                ) : (
-                    <Card>
-                        <CardContent>
-                            <p className="p-6 text-center text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
-                        </CardContent>
-                    </Card>
-                )}
-            
-                <div className="grid gap-4 md:grid-cols-1">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                            <BedDouble className="h-6 w-6 text-primary" />
-                            <CardTitle>Dove Alloggiare</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {accommodationSuggestions && accommodationSuggestions.length > 0 ? (
-                                <div className="space-y-2">
-                                    {accommodationSuggestions.map((suggestion, index) => (
-                                        <AccommodationCard key={index} suggestion={suggestion} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-muted-foreground">Nessun suggerimento specifico per l'alloggio disponibile.</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-                
-                {localEvents && localEvents.toLowerCase() !== 'nessun evento speciale previsto' && (
-                    <Card>
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                            <PartyPopper className="h-6 w-6 text-accent" />
-                            <CardTitle>Eventi Locali</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{localEvents}</p>
-                        </CardContent>
-                    </Card>
-                )}
-
-                <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                            <AlertTriangle className="h-6 w-6 text-destructive" />
-                            <CardTitle>Avvisi di Viaggio</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{potentialIssues}</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                            <Sun className="h-6 w-6 text-yellow-500" />
-                            <CloudRain className="h-6 w-6 text-blue-400" />
-                            <CardTitle>Meteo e Piani di Riserva</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground">{weatherForecast}</p>
-                        </CardContent>
-                    </Card>
-                </div>
+              </Accordion>
             </div>
-        </TabsContent>
-        <TabsContent value="packing">
-            {packingListData ? <PackingListDisplay data={packingListData} /> : <p>Lista valigia in preparazione...</p>}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg">
+              <Crown className="h-12 w-12 text-yellow-500 mb-4" />
+              <h3 className="text-2xl font-bold text-center">Sblocca il resto della lista!</h3>
+              <p className="text-muted-foreground text-center mt-2 mb-4">Passa a Premium per vedere la lista completa e altre funzionalità.</p>
+              <Button>Passa a Premium</Button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  export function ItineraryDisplay({ itineraryData, packingListData }: ItineraryDisplayProps) {
+    const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = itineraryData;
+    const { isPremium } = useAuth();
+  
+    const visibleDaysCount = isPremium ? itinerary.length : Math.ceil(itinerary.length / 4);
+    const visibleDays = itinerary.slice(0, visibleDaysCount);
+    const hiddenDaysCount = itinerary.length - visibleDaysCount;
+  
+    return (
+      <div className="space-y-8">
+        <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
+        <Tabs defaultValue="itinerary" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="itinerary">Itinerario</TabsTrigger>
+              <TabsTrigger value="packing" disabled={!packingListData}>Valigia</TabsTrigger>
+          </TabsList>
+          <TabsContent value="itinerary">
+              <div className="space-y-8 pt-6">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      {costEstimates ? (
+                          <>
+                              <InfoCard icon={<Wallet className="h-5 w-5" />} title="Alloggio" content={costEstimates.accommodation} className="bg-blue-50 dark:bg-blue-900/20" />
+                              <InfoCard icon={<Bus className="h-5 w-5" />} title="Trasporti" content={costEstimates.transport} className="bg-green-50 dark:bg-green-900/20" />
+                              <InfoCard icon={<Utensils className="h-5 w-5" />} title="Pasti" content={costEstimates.meals} className="bg-orange-50 dark:bg-orange-900/20" />
+                              <InfoCard icon={<Landmark className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
+                          </>
+                      ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
+                  </div>
+  
+                  {itinerary && itinerary.length > 0 ? (
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Piano Giornaliero</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                          <Tabs defaultValue="day-0" className="w-full">
+                          <ScrollArea className="w-full whitespace-nowrap">
+                              <TabsList className="p-0 bg-transparent">
+                                  {visibleDays.map((day, index) => (
+                                      <TabsTrigger 
+                                          key={index} 
+                                          value={`day-${index}`}
+                                          className="mx-1 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-card data-[state=inactive]:text-foreground"
+                                      >
+                                          {day.day}
+                                      </TabsTrigger>
+                                  ))}
+                                  {!isPremium && hiddenDaysCount > 0 && (
+                                    <div className="inline-flex items-center mx-1 px-3 py-1.5 text-sm font-medium text-muted-foreground">
+                                        + {hiddenDaysCount} giorni bloccati
+                                    </div>
+                                  )}
+                              </TabsList>
+                              <ScrollBar orientation="horizontal" />
+                          </ScrollArea>
+                          {visibleDays.map((day, index) => (
+                              <TabsContent key={index} value={`day-${index}`}>
+                                  <div className="pt-6 border-t mt-4">
+                                      <ActivityTimeline activities={day.activities} />
+                                  </div>
+                              </TabsContent>
+                          ))}
+                           {!isPremium && hiddenDaysCount > 0 && (
+                                <div className="relative mt-4 pt-6 border-t">
+                                    <div className="blur-md pointer-events-none">
+                                        <p className='font-bold text-foreground'>Giorno {visibleDaysCount + 1}: Attività bloccata</p>
+                                        <p className='text-muted-foreground'>Descrizione bloccata</p>
+                                        <div className='h-24'></div>
+                                    </div>
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 rounded-lg">
+                                        <Crown className="h-12 w-12 text-yellow-500 mb-4" />
+                                        <h3 className="text-2xl font-bold text-center">Sblocca il resto del viaggio!</h3>
+                                        <p className="text-muted-foreground text-center mt-2 mb-4">Passa a Premium per vedere l'itinerario completo.</p>
+                                        <Button>Passa a Premium</Button>
+                                    </div>
+                                </div>
+                            )}
+                          </Tabs>
+                      </CardContent>
+                  </Card>
+                  ) : (
+                      <Card>
+                          <CardContent>
+                              <p className="p-6 text-center text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
+                          </CardContent>
+                      </Card>
+                  )}
+              
+                  <div className="grid gap-4 md:grid-cols-1">
+                      <Card>
+                          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                              <BedDouble className="h-6 w-6 text-primary" />
+                              <CardTitle>Dove Alloggiare</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                              {accommodationSuggestions && accommodationSuggestions.length > 0 ? (
+                                  <div className="space-y-2">
+                                      {accommodationSuggestions.map((suggestion, index) => (
+                                          <AccommodationCard key={index} suggestion={suggestion} />
+                                      ))}
+                                  </div>
+                              ) : (
+                                  <p className="text-muted-foreground">Nessun suggerimento specifico per l'alloggio disponibile.</p>
+                              )}
+                          </CardContent>
+                      </Card>
+                  </div>
+                  
+                  {localEvents && localEvents.toLowerCase() !== 'nessun evento speciale previsto' && (
+                      <Card>
+                          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                              <PartyPopper className="h-6 w-6 text-accent" />
+                              <CardTitle>Eventi Locali</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                              <p className="text-muted-foreground">{localEvents}</p>
+                          </CardContent>
+                      </Card>
+                  )}
+  
+                  <div className="grid gap-4 md:grid-cols-2">
+                      <Card>
+                          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                              <AlertTriangle className="h-6 w-6 text-destructive" />
+                              <CardTitle>Avvisi di Viaggio</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                              <p className="text-muted-foreground">{potentialIssues}</p>
+                          </CardContent>
+                      </Card>
+                      <Card>
+                          <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                              <Sun className="h-6 w-6 text-yellow-500" />
+                              <CloudRain className="h-6 w-6 text-blue-400" />
+                              <CardTitle>Meteo e Piani di Riserva</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                              <p className="text-muted-foreground">{weatherForecast}</p>
+                          </CardContent>
+                      </Card>
+                  </div>
+              </div>
+          </TabsContent>
+          <TabsContent value="packing">
+              {packingListData ? <PackingListDisplay data={packingListData} isPremium={isPremium} /> : <p>Lista valigia in preparazione...</p>}
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  }
+  
