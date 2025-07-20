@@ -9,6 +9,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
+// Inizializza Firebase solo se non è già stato fatto
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 export { app };
