@@ -18,6 +18,7 @@ export default function PlannerPage() {
   const [itineraryData, setItineraryData] = useState<GenerateItineraryOutput | null>(null);
   const [packingListData, setPackingListData] = useState<GeneratePackingListOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [formValues, setFormValues] = useState<ItineraryFormValues | null>(null);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -32,6 +33,7 @@ export default function PlannerPage() {
     setIsLoading(true);
     setItineraryData(null);
     setPackingListData(null);
+    setFormValues(data);
 
     try {
         const itineraryInput = {
@@ -87,7 +89,7 @@ export default function PlannerPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <section id="form-section" className="mb-12 text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 font-headline">
               Il Tuo Viaggio Personalizzato, in Pochi Secondi
@@ -108,7 +110,11 @@ export default function PlannerPage() {
             )}
             {!isLoading && itineraryData && (
               <div className="animate-in fade-in-50 duration-500">
-                <ItineraryDisplay itineraryData={itineraryData} packingListData={packingListData} />
+                <ItineraryDisplay 
+                  itineraryData={itineraryData} 
+                  packingListData={packingListData}
+                  formValues={formValues}
+                />
               </div>
             )}
           </section>

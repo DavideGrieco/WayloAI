@@ -6,15 +6,21 @@ import type { GeneratePackingListOutput } from '@/ai/flows/generate-packing-list
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem, Crown } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem, Crown, Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { useAuth } from '@/context/auth-context';
 import { Button } from './ui/button';
+import { saveTrip } from '@/services/trips-service';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
+import type { ItineraryFormValues } from './itinerary-form';
 
 interface ItineraryDisplayProps {
   itineraryData: GenerateItineraryOutput;
   packingListData: GeneratePackingListOutput | null;
+  isSavedTrip?: boolean;
+  formValues?: ItineraryFormValues; 
 }
 
 const InfoCard = ({ icon, title, content, className }: { icon: React.ReactNode, title: string, content: string | React.ReactNode, className?: string }) => (
@@ -216,17 +222,54 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
     );
   };
   
-  export function ItineraryDisplay({ itineraryData, packingListData }: ItineraryDisplayProps) {
+  export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip = false, formValues }: ItineraryDisplayProps) {
     const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = itineraryData;
-    const { isPremium } = useAuth();
+    const { user, isPremium } = useAuth();
+    const { toast } = useToast();
+    const [isSaving, setIsSaving] = useState(false);
   
-    const visibleDaysCount = isPremium ? itinerary.length : Math.ceil(itinerary.length / 4);
+    const visibleDaysCount = isPremium || isSavedTrip ? itinerary.length : Math.ceil(itinerary.length / 4);
     const visibleDays = itinerary.slice(0, visibleDaysCount);
     const hiddenDaysCount = itinerary.length - visibleDaysCount;
+    
+    const handleSaveTrip = async () => {
+        if (!user || !formValues) return;
+        setIsSaving(true);
+        try {
+            await saveTrip({
+                userId: user.uid,
+                destination: formValues.destination,
+                startDate: formValues.dates.from.toISOString(),
+                endDate: formValues.dates.to.toISOString(),
+                itineraryData: itineraryData,
+                packingListData: packingListData,
+            });
+            toast({
+                title: "Viaggio salvato!",
+                description: "Puoi trovare il tuo itinerario nella sezione 'I Miei Viaggi'.",
+            });
+        } catch (error) {
+            toast({
+                title: "Errore",
+                description: "Impossibile salvare il viaggio. Riprova.",
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
   
     return (
       <div className="space-y-8">
-        <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
+        <div className="flex justify-between items-start">
+            <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
+            {isPremium && !isSavedTrip && formValues && (
+                <Button onClick={handleSaveTrip} disabled={isSaving}>
+                    <Save className="mr-2 h-4 w-4"/>
+                    {isSaving ? "Salvataggio..." : "Salva Viaggio"}
+                </Button>
+            )}
+        </div>
         <Tabs defaultValue="itinerary" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="itinerary">Itinerario</TabsTrigger>
@@ -263,7 +306,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
                                           {day.day}
                                       </TabsTrigger>
                                   ))}
-                                  {!isPremium && hiddenDaysCount > 0 && (
+                                  {(!isPremium && !isSavedTrip) && hiddenDaysCount > 0 && (
                                     <div className="inline-flex items-center mx-1 px-3 py-1.5 text-sm font-medium text-muted-foreground">
                                         + {hiddenDaysCount} giorni bloccati
                                     </div>
@@ -278,7 +321,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
                                   </div>
                               </TabsContent>
                           ))}
-                           {!isPremium && hiddenDaysCount > 0 && (
+                           {(!isPremium && !isSavedTrip) && hiddenDaysCount > 0 && (
                                 <div className="relative mt-4 pt-6 border-t">
                                     <div className="blur-md pointer-events-none">
                                         <p className='font-bold text-foreground'>Giorno {visibleDaysCount + 1}: Attività bloccata</p>
@@ -360,7 +403,7 @@ const PackingListDisplay = ({ data, isPremium }: { data: GeneratePackingListOutp
               </div>
           </TabsContent>
           <TabsContent value="packing">
-              {packingListData ? <PackingListDisplay data={packingListData} isPremium={isPremium} /> : <p>Lista valigia in preparazione...</p>}
+              {packingListData ? <PackingListDisplay data={packingListData} isPremium={isPremium || isSavedTrip} /> : <p>Lista valigia in preparazione...</p>}
           </TabsContent>
         </Tabs>
       </div>
