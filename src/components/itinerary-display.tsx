@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
@@ -378,7 +377,7 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
                   </div>
                   
                   {localEvents && localEvents.toLowerCase() !== 'nessun evento speciale previsto' && (
-                      <Card>
+                     <Card>
                           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
                               <PartyPopper className="h-6 w-6 text-accent" />
                               <CardTitle>Eventi Locali</CardTitle>
@@ -394,7 +393,7 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
                           <CardHeader className="flex flex-row items-center gap-2 space-y-0">
                               <AlertTriangle className="h-6 w-6 text-destructive" />
                               <CardTitle>Avvisi di Viaggio</CardTitle>
-                          </Header>
+                          </CardHeader>
                           <CardContent>
                               <p className="text-muted-foreground">{potentialIssues}</p>
                           </CardContent>
@@ -419,5 +418,3 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
       </div>
     );
 }
-
-    
