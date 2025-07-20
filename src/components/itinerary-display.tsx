@@ -4,7 +4,7 @@ import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon, AlertTriangle, Building } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon, AlertTriangle, Building, PartyPopper } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ItineraryDisplayProps {
@@ -69,7 +69,7 @@ const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput
 
 
 export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
-  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues } = data;
+  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = data;
 
   return (
     <div className="space-y-8">
@@ -147,6 +147,18 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
             </CardContent>
         </Card>
       </div>
+      
+      {localEvents && (
+          <Card>
+              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                  <PartyPopper className="h-6 w-6 text-accent" />
+                  <CardTitle>Eventi Locali</CardTitle>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-muted-foreground">{localEvents}</p>
+              </CardContent>
+          </Card>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

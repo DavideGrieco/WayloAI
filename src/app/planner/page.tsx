@@ -8,7 +8,6 @@ import { AppHeader } from '@/components/app-header';
 import { ItineraryForm, type ItineraryFormValues } from '@/components/itinerary-form';
 import { ItineraryDisplay } from '@/components/itinerary-display';
 import { useToast } from '@/hooks/use-toast';
-import { useUsageTracker } from '@/hooks/use-usage-tracker';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { AppFooter } from '@/components/app-footer';
@@ -18,7 +17,6 @@ export default function PlannerPage() {
   const [itineraryData, setItineraryData] = useState<GenerateItineraryOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { isReady, canGenerate, incrementUsage, getUsage } = useUsageTracker();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -29,27 +27,6 @@ export default function PlannerPage() {
   }, [user, authLoading, router]);
 
   const handleSubmit = async (data: ItineraryFormValues) => {
-    // Il controllo del limite è stato rimosso per la prototipazione
-    /*
-    if (!isReady) {
-      toast({
-        title: 'Attendere prego',
-        description: 'Verifica del limite di utilizzo in corso...',
-        variant: 'default',
-      });
-      return;
-    }
-
-    if (!canGenerate()) {
-      toast({
-        title: 'Limite mensile raggiunto',
-        description: 'Hai utilizzato tutti e 3 i tuoi itinerari gratuiti per questo mese. Riprova il mese prossimo.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    */
-
     setIsLoading(true);
     setItineraryData(null);
 
@@ -60,7 +37,6 @@ export default function PlannerPage() {
         endDate: data.dates.to?.toISOString().split('T')[0] ?? '',
       });
       setItineraryData(result);
-      // incrementUsage(); // Rimosso per prototipazione
     } catch (error) {
       console.error('Errore nella generazione dell\'itinerario:', error);
       toast({
@@ -101,15 +77,7 @@ export default function PlannerPage() {
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
               Dicci la tua destinazione, le date, gli interessi e il budget. Waylo AI creerà un itinerario unico, giorno per giorno, solo per te.
             </p>
-            <ItineraryForm onSubmit={handleSubmit} isLoading={isLoading} isUsageReady={isReady} />
-            {/* Messaggio utilizzo rimosso per la prototipazione */}
-            {/*
-            {isReady && (
-                 <p className="text-sm text-muted-foreground mt-4">
-                 Hai ancora {3 - getUsage().count} itinerari rimanenti per questo mese.
-               </p>
-            )}
-            */}
+            <ItineraryForm onSubmit={handleSubmit} isLoading={isLoading} />
           </section>
 
           <section id="itinerary-section">

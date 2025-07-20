@@ -17,6 +17,8 @@ const GenerateItineraryInputSchema = z.object({
   endDate: z.string().describe('La data di fine del viaggio (YYYY-MM-DD).'),
   interests: z.string().describe('Elenco di interessi separati da virgole (es. cultura, natura, gastronomia).'),
   budget: z.string().describe('Il budget approssimativo per il viaggio (es. 500€-1000€).'),
+  travelerType: z.string().describe("Il tipo di viaggiatore (es. 'Coppia', 'Famiglia con bambini', 'Amici', 'Solo')."),
+  travelPace: z.string().describe("Il ritmo desiderato del viaggio (es. 'Rilassato', 'Moderato', 'Intenso')."),
 });
 
 export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema>;
@@ -61,6 +63,7 @@ const GenerateItineraryOutputSchema = z.object({
   potentialIssues: z.string().describe("Avvisi su potenziali problemi come zone pericolose, costi elevati, problemi di trasporto, ecc."),
   costEstimates: CostEstimatesSchema.describe('Stime dettagliate dei costi suddivise in alloggio, trasporti, pasti e attività.'),
   weatherForecast: z.string().describe('Previsioni meteorologiche essenziali per la durata del viaggio e attività alternative in caso di maltempo.'),
+  localEvents: z.string().describe("Descrizione di eventuali feste, eventi speciali o festività locali che si svolgono durante le date del viaggio. Se non ci sono eventi, indica 'Nessun evento speciale previsto'."),
 });
 
 export type GenerateItineraryOutput = z.infer<typeof GenerateItineraryOutputSchema>;
@@ -80,15 +83,18 @@ const itineraryPrompt = ai.definePrompt({
   Data di fine: {{endDate}}
   Interessi: {{interests}}
   Budget: {{budget}}
+  Tipo di viaggiatore: {{travelerType}}
+  Ritmo del viaggio: {{travelPace}}
 
   Istruzioni:
-  1. Genera un itinerario giorno per giorno con attività suddivise per fasce orarie (mattina, pranzo, pomeriggio, sera).
+  1. Genera un itinerario giorno per giorno con attività suddivise per fasce orarie (mattina, pranzo, pomeriggio, sera). L'itinerario deve essere adattato al tipo di viaggiatore e al ritmo del viaggio.
   2. Per ogni attività (morning, lunch, afternoon, evening), fornisci un oggetto con 'description', 'location', e 'coordinates' (lat, lng).
-  3. Ottimizza l'itinerario geograficamente per evitare spostamenti inutili.
-  4. Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'). Ogni suggerimento deve essere un oggetto con 'name' (es. 'Hotel Roma'), 'zone' (es. 'Centro Storico'), 'description', e 'coordinates' (lat, lng).
-  5. Fornisci avvisi su potenziali problemi ('potentialIssues') come zone pericolose, costi elevati, problemi con i trasporti, ecc.
-  6. Fornisci previsioni meteorologiche essenziali ('weatherForecast') e attività alternative in caso di maltempo.
-  7. Fornisci una stima dettagliata dei costi ('costEstimates') suddivisa in alloggio, trasporti, pasti e attività.
+  3. **IMPORTANTE: Cerca attivamente eventuali feste, sagre, concerti o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'.**
+  4. Ottimizza l'itinerario geograficamente per evitare spostamenti inutili.
+  5. Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'). Ogni suggerimento deve essere un oggetto con 'name' (es. 'Hotel Roma'), 'zone' (es. 'Centro Storico'), 'description', e 'coordinates' (lat, lng).
+  6. Fornisci avvisi su potenziali problemi ('potentialIssues') come zone pericolose, costi elevati, problemi con i trasporti, ecc.
+  7. Fornisci previsioni meteorologiche essenziali ('weatherForecast') e attività alternative in caso di maltempo.
+  8. Fornisci una stima dettagliata dei costi ('costEstimates') suddivisa in alloggio, trasporti, pasti e attività.
   
   Requisiti di output:
   - L'itinerario deve essere realistico, credibile e adatto a una vera guida di viaggio.
@@ -117,7 +123,8 @@ const itineraryPrompt = ai.definePrompt({
       "meals": "60€/giorno",
       "activities": "40€/giorno"
     },
-    "weatherForecast": "Soleggiato, 25°C. In caso di pioggia, visita musei come il Museo Picasso."
+    "weatherForecast": "Soleggiato, 25°C. In caso di pioggia, visita musei come il Museo Picasso.",
+    "localEvents": "Durante il tuo soggiorno si svolge la 'Festa de la Mercè', la festa patronale di Barcellona, con parate di giganti, castelli umani e concerti gratuiti in tutta la città."
   }
 
   Restituisci l'output ESCLUSIVAMENTE in formato JSON valido. Non includere testo o commenti al di fuori del JSON.

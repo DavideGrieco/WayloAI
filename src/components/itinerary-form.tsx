@@ -13,6 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Card, CardContent } from './ui/card';
 
@@ -24,6 +25,8 @@ const formSchema = z.object({
   }),
   interests: z.string().min(3, { message: 'Elenca almeno un interesse.' }),
   budget: z.string().min(2, { message: 'Fornisci una stima del budget.' }),
+  travelerType: z.string({ required_error: 'Seleziona il tipo di viaggiatore.' }),
+  travelPace: z.string({ required_error: 'Seleziona il ritmo del viaggio.' }),
 });
 
 export type ItineraryFormValues = z.infer<typeof formSchema>;
@@ -31,16 +34,17 @@ export type ItineraryFormValues = z.infer<typeof formSchema>;
 interface ItineraryFormProps {
   onSubmit: (values: ItineraryFormValues) => void;
   isLoading: boolean;
-  isUsageReady: boolean;
 }
 
-export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFormProps) {
+export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
   const form = useForm<ItineraryFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       destination: '',
       interests: '',
       budget: '',
+      travelerType: 'Coppia',
+      travelPace: 'Moderato',
     },
   });
 
@@ -138,10 +142,55 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="travelerType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo di Viaggiatore</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona un'opzione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Solo">Solo</SelectItem>
+                        <SelectItem value="Coppia">Coppia</SelectItem>
+                        <SelectItem value="Famiglia con bambini">Famiglia con bambini</SelectItem>
+                        <SelectItem value="Amici">Gruppo di amici</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="travelPace"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ritmo del Viaggio</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona un'opzione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Rilassato">Rilassato</SelectItem>
+                        <SelectItem value="Moderato">Moderato</SelectItem>
+                        <SelectItem value="Intenso">Intenso</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <Button
               type="submit"
-              disabled={isLoading || !isUsageReady}
+              disabled={isLoading}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
               size="lg"
             >
