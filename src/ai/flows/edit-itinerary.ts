@@ -64,7 +64,7 @@ const GenerateItineraryInputSchema = z.object({
   hotelName: z.string().optional(),
 });
 
-export const EditItineraryInputSchema = z.object({
+const EditItineraryInputSchema = z.object({
     existingItinerary: GenerateItineraryOutputSchema.describe("The existing JSON travel itinerary that needs to be modified."),
     editRequest: z.string().describe("The user's specific request to modify the itinerary (e.g., 'Add a shopping activity on day 2', 'Make the pace of the first day more relaxed')."),
     originalInput: GenerateItineraryInputSchema.optional().describe("The original input data used to create the itinerary, to maintain context.")
