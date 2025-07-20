@@ -51,17 +51,18 @@ const ActivityTimeline = ({ activities }: { activities: GenerateItineraryOutput[
                             <div className="pl-8 flex-1">
                                 <p className="font-bold text-foreground">{activity.time}</p>
                                 <p className="font-semibold text-foreground mt-1">{activity.description}</p>
-                                <p className="text-muted-foreground text-sm">{activity.details}</p>
-                                {mapsUrl && activity.details && (
-                                    <a 
+                                {mapsUrl && activity.details ? (
+                                     <a 
                                         href={mapsUrl} 
                                         target="_blank" 
                                         rel="noopener noreferrer" 
-                                        className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-2"
+                                        className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-1"
                                     >
                                         <MapPin className="h-3 w-3" />
-                                        Vedi su Google Maps
+                                        {activity.details}
                                     </a>
+                                ) : (
+                                    <p className="text-muted-foreground text-sm">{activity.details}</p>
                                 )}
                             </div>
                         </div>
@@ -79,17 +80,13 @@ const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput
       <div className="flex items-start gap-4 py-4 not-last:border-b">
         <div className="text-primary mt-1"><Building className="h-5 w-5" /></div>
         <div className='flex-1'>
-          <p className="font-semibold text-foreground">{suggestion.name} - <span className="font-normal text-muted-foreground">{suggestion.zone}</span></p>
+          <p className="font-semibold text-foreground">
+            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+              {suggestion.name}
+            </a>
+            <span className="font-normal text-muted-foreground"> - {suggestion.zone}</span>
+          </p>
           <p className="text-sm text-muted-foreground mt-1">{suggestion.description}</p>
-          <a 
-            href={mapsUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-2"
-          >
-            <MapPin className="h-3 w-3" />
-            Vedi su Google Maps
-          </a>
         </div>
       </div>
     );

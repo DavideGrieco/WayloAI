@@ -5,12 +5,12 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Loader2, Wand2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Loader2, Wand2 } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -27,6 +27,8 @@ const formSchema = z.object({
   budget: z.string().min(2, { message: 'Fornisci una stima del budget.' }),
   travelerType: z.string({ required_error: 'Seleziona il tipo di viaggiatore.' }),
   travelPace: z.string({ required_error: 'Seleziona il ritmo del viaggio.' }),
+  arrivalTime: z.string().optional(),
+  departureTime: z.string().optional(),
 });
 
 export type ItineraryFormValues = z.infer<typeof formSchema>;
@@ -45,6 +47,8 @@ export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
       budget: '',
       travelerType: 'Coppia',
       travelPace: 'Moderato',
+      arrivalTime: '',
+      departureTime: '',
     },
   });
 
@@ -61,7 +65,7 @@ export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
                   <FormItem>
                     <FormLabel>Destinazione</FormLabel>
                     <FormControl>
-                      <Input placeholder="es. Barcellona" {...field} />
+                      <Input placeholder="es. Roma" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -183,6 +187,40 @@ export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
                         <SelectItem value="Intenso">Intenso</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="arrivalTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Orario di arrivo (primo giorno)</FormLabel>
+                     <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                        <Input placeholder="es. 14:30" {...field} className="pl-10" />
+                        </FormControl>
+                    </div>
+                     <FormDescription>Opzionale</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="departureTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Orario di partenza (ultimo giorno)</FormLabel>
+                    <div className="relative">
+                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                        <Input placeholder="es. 18:00" {...field} className="pl-10"/>
+                        </FormControl>
+                    </div>
+                    <FormDescription>Opzionale</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
