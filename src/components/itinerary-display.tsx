@@ -4,7 +4,7 @@ import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, Coffee, ShoppingBag, SunDim, Moon, AlertTriangle, Building, PartyPopper } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ItineraryDisplayProps {
@@ -23,27 +23,55 @@ const InfoCard = ({ icon, title, content, className }: { icon: React.ReactNode, 
   </Card>
 );
 
-const ActivityCard = ({ icon, timeOfDay, activity }: { icon: React.ReactNode, timeOfDay: string, activity: GenerateItineraryOutput['itinerary'][0]['morning']}) => {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${activity.coordinates.lat},${activity.coordinates.lng}`;
+const ActivityTimeline = ({ activities }: { activities: GenerateItineraryOutput['itinerary'][0]['activities'] }) => {
+    const getIconForType = (type: 'activity' | 'food' | 'transport') => {
+        switch (type) {
+            case 'activity': return <Landmark className="h-5 w-5 text-primary" />;
+            case 'food': return <Utensils className="h-5 w-5 text-orange-500" />;
+            case 'transport': return <TramFront className="h-5 w-5 text-green-500" />;
+            default: return <Circle className="h-5 w-5 text-muted-foreground" />;
+        }
+    };
+
     return (
-        <div className="flex items-start gap-4 p-4 rounded-lg bg-background/50">
-            <div className="text-primary mt-1">{icon}</div>
-            <div className='flex-1'>
-                <p className="font-semibold text-foreground">{timeOfDay}</p>
-                <p className="text-muted-foreground">{activity.description}</p>
-                <a 
-                    href={mapsUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-1"
-                >
-                    <MapPin className="h-3 w-3" />
-                    {activity.location}
-                </a>
+        <div className="relative pl-8">
+            {/* Vertical line */}
+            <div className="absolute left-3 top-0 h-full w-0.5 bg-border"></div>
+            
+            <div className="space-y-8">
+                {activities.map((activity, index) => {
+                    const mapsUrl = activity.coordinates ? `https://www.google.com/maps/search/?api=1&query=${activity.coordinates.lat},${activity.coordinates.lng}` : null;
+                    return (
+                        <div key={index} className="relative flex items-start">
+                            {/* Icon on the timeline */}
+                            <div className="absolute -left-0.5 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background">
+                                {getIconForType(activity.type)}
+                            </div>
+                            
+                            <div className="pl-8 flex-1">
+                                <p className="font-bold text-foreground">{activity.time}</p>
+                                <p className="font-semibold text-foreground mt-1">{activity.description}</p>
+                                <p className="text-muted-foreground text-sm">{activity.details}</p>
+                                {mapsUrl && activity.details && (
+                                    <a 
+                                        href={mapsUrl} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-2"
+                                    >
+                                        <MapPin className="h-3 w-3" />
+                                        Vedi su Google Maps
+                                    </a>
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
         </div>
-    )
+    );
 };
+
 
 const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput['accommodationSuggestions'][0] }) => {
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${suggestion.coordinates.lat},${suggestion.coordinates.lng}`;
@@ -81,7 +109,7 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
                 <InfoCard icon={<Wallet className="h-5 w-5" />} title="Alloggio" content={costEstimates.accommodation} className="bg-blue-50 dark:bg-blue-900/20" />
                 <InfoCard icon={<Bus className="h-5 w-5" />} title="Trasporti" content={costEstimates.transport} className="bg-green-50 dark:bg-green-900/20" />
                 <InfoCard icon={<Utensils className="h-5 w-5" />} title="Pasti" content={costEstimates.meals} className="bg-orange-50 dark:bg-orange-900/20" />
-                <InfoCard icon={<ShoppingBag className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
+                <InfoCard icon={<Landmark className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
             </>
         ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
       </div>
@@ -109,12 +137,9 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
                   </ScrollArea>
                   {itinerary.map((day, index) => (
                       <TabsContent key={index} value={`day-${index}`}>
-                      <div className="space-y-4 pt-4 border-t mt-4">
-                          <ActivityCard icon={<Coffee className="h-5 w-5" />} timeOfDay="Mattina" activity={day.morning} />
-                          <ActivityCard icon={<Utensils className="h-5 w-5" />} timeOfDay="Pranzo" activity={day.lunch} />
-                          <ActivityCard icon={<SunDim className="h-5 w-5" />} timeOfDay="Pomeriggio" activity={day.afternoon} />
-                          <ActivityCard icon={<Moon className="h-5 w-5" />} timeOfDay="Sera" activity={day.evening} />
-                      </div>
+                        <div className="pt-6 border-t mt-4">
+                            <ActivityTimeline activities={day.activities} />
+                        </div>
                       </TabsContent>
                   ))}
                 </Tabs>
@@ -148,7 +173,7 @@ export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
         </Card>
       </div>
       
-      {localEvents && (
+      {localEvents && localEvents.toLowerCase() !== 'nessun evento speciale previsto' && (
           <Card>
               <CardHeader className="flex flex-row items-center gap-2 space-y-0">
                   <PartyPopper className="h-6 w-6 text-accent" />

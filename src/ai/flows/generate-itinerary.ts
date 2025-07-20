@@ -24,12 +24,14 @@ const GenerateItineraryInputSchema = z.object({
 export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema>;
 
 const ActivitySchema = z.object({
-  description: z.string().describe("Descrizione dell'attività o del luogo."),
-  location: z.string().describe("Nome del luogo (es. 'Colosseo', 'Ristorante da Mario')."),
+  time: z.string().describe("L'orario dell'attività (es. '09:00 - 11:00')."),
+  type: z.enum(['activity', 'food', 'transport']).describe("Il tipo di evento: 'activity' per visite, 'food' per pasti, 'transport' per spostamenti."),
+  description: z.string().describe("Descrizione dell'attività, del pasto o del mezzo di trasporto."),
+  details: z.string().describe("Dettagli aggiuntivi, come il nome del luogo o del ristorante."),
   coordinates: z.object({
     lat: z.number().describe("La latitudine del luogo."),
     lng: z.number().describe("La longitudine del luogo."),
-  }).describe("Coordinate geografiche per Google Maps."),
+  }).optional().describe("Coordinate geografiche per Google Maps, se applicabile (non per i trasporti)."),
 });
 
 const AccommodationSuggestionSchema = z.object({
@@ -43,11 +45,8 @@ const AccommodationSuggestionSchema = z.object({
 });
 
 const ItineraryDaySchema = z.object({
-    day: z.string().describe("Il giorno dell'itinerario (es. Giorno 1, Giorno 2)."),
-    morning: ActivitySchema.describe("Attività per la mattina."),
-    lunch: ActivitySchema.describe("Suggerimento per il pranzo."),
-    afternoon: ActivitySchema.describe("Attività per il pomeriggio."),
-    evening: ActivitySchema.describe("Attività per la sera."),
+    day: z.string().describe("Il giorno dell'itinerario (es. Giorno 1: 11 Agosto)."),
+    activities: z.array(ActivitySchema).describe("Un elenco di attività, pasti e trasporti per la giornata in ordine cronologico."),
 });
 
 const CostEstimatesSchema = z.object({
@@ -63,7 +62,7 @@ const GenerateItineraryOutputSchema = z.object({
   potentialIssues: z.string().describe("Avvisi su potenziali problemi come zone pericolose, costi elevati, problemi di trasporto, ecc."),
   costEstimates: CostEstimatesSchema.describe('Stime dettagliate dei costi suddivise in alloggio, trasporti, pasti e attività.'),
   weatherForecast: z.string().describe('Previsioni meteorologiche essenziali per la durata del viaggio e attività alternative in caso di maltempo.'),
-  localEvents: z.string().describe("Descrizione di eventuali feste, eventi speciali o festività locali che si svolgono durante le date del viaggio. Se non ci sono eventi, indica 'Nessun evento speciale previsto'."),
+  localEvents: z.string().describe("Descrizione di eventuali feste, eventi speciali o festività locali (incluso festività nazionali come Ferragosto) che si svolgono durante le date del viaggio. Se non ci sono eventi, indica 'Nessun evento speciale previsto'."),
 });
 
 export type GenerateItineraryOutput = z.infer<typeof GenerateItineraryOutputSchema>;
@@ -76,7 +75,7 @@ const itineraryPrompt = ai.definePrompt({
   name: 'itineraryPrompt',
   input: {schema: GenerateItineraryInputSchema},
   output: {schema: GenerateItineraryOutputSchema},
-  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato giorno per giorno per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido. Per ogni attività e suggerimento di alloggio, fornisci coordinate geografiche REALI e PRECISE.
+  prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato e molto dettagliato per l'utente in base alla destinazione, alle date, agli interessi e al budget. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido. Per ogni luogo, fornisci coordinate geografiche REALI e PRECISE.
 
   Destinazione: {{destination}}
   Data di inizio: {{startDate}}
@@ -87,45 +86,33 @@ const itineraryPrompt = ai.definePrompt({
   Ritmo del viaggio: {{travelPace}}
 
   Istruzioni:
-  1. Genera un itinerario giorno per giorno con attività suddivise per fasce orarie (mattina, pranzo, pomeriggio, sera). L'itinerario deve essere adattato al tipo di viaggiatore e al ritmo del viaggio.
-  2. Per ogni attività (morning, lunch, afternoon, evening), fornisci un oggetto con 'description', 'location', e 'coordinates' (lat, lng).
-  3. **IMPORTANTE: Cerca attivamente eventuali feste, sagre, concerti o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'.**
-  4. Ottimizza l'itinerario geograficamente per evitare spostamenti inutili.
-  5. Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'). Ogni suggerimento deve essere un oggetto con 'name' (es. 'Hotel Roma'), 'zone' (es. 'Centro Storico'), 'description', e 'coordinates' (lat, lng).
-  6. Fornisci avvisi su potenziali problemi ('potentialIssues') come zone pericolose, costi elevati, problemi con i trasporti, ecc.
-  7. Fornisci previsioni meteorologiche essenziali ('weatherForecast') e attività alternative in caso di maltempo.
-  8. Fornisci una stima dettagliata dei costi ('costEstimates') suddivisa in alloggio, trasporti, pasti e attività.
+  1.  Genera un itinerario giorno per giorno. Per ogni giorno, fornisci una lista cronologica di eventi.
+  2.  Per ogni giorno, il campo 'day' deve includere sia il numero del giorno che la data (es. "Giorno 1: 11 Agosto").
+  3.  Ogni evento nella lista 'activities' deve essere un oggetto con 'time' (es. "10:00 - 11:30"), 'type' ('activity', 'food', o 'transport'), 'description', 'details' (es. nome del museo, ristorante, o "Spostamento con metro Linea A"), e 'coordinates' se applicabile.
+  4.  **IMPORTANTE: Cerca attivamente eventuali feste, sagre, concerti, festività nazionali (es. Ferragosto il 15 Agosto) o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'.**
+  5.  Ottimizza l'itinerario geograficamente e includi gli spostamenti ('transport') tra le attività principali.
+  6.  Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions').
+  7.  Fornisci avvisi su potenziali problemi ('potentialIssues').
+  8.  Fornisci previsioni meteorologiche essenziali ('weatherForecast').
+  9.  Fornisci una stima dettagliata dei costi ('costEstimates').
   
   Requisiti di output:
-  - L'itinerario deve essere realistico, credibile e adatto a una vera guida di viaggio.
-  - Il tono deve essere pratico, chiaro e amichevole.
-  - Assumi la persona di un "viaggio in tasca".
+  -   L'itinerario deve essere realistico, credibile e molto dettagliato, includendo la logistica degli spostamenti.
+  -   Il tono deve essere pratico, chiaro e amichevole.
 
-  Esempio di Output JSON:
-  {
-    "itinerary": [
-      {
-        "day": "Giorno 1",
-        "morning": { "description": "Visita alla Sagrada Familia", "location": "Sagrada Familia", "coordinates": { "lat": 41.4036, "lng": 2.1744 } },
-        "lunch": { "description": "Pranzo a base di tapas", "location": "Ciudad Condal", "coordinates": { "lat": 41.3917, "lng": 2.1645 } },
-        "afternoon": { "description": "Passeggiata nel Parco Güell", "location": "Parco Güell", "coordinates": { "lat": 41.4145, "lng": 2.1527 } },
-        "evening": { "description": "Spettacolo di Flamenco", "location": "Tarantos", "coordinates": { "lat": 41.3825, "lng": 2.1769 } }
-      }
-    ],
-    "accommodationSuggestions": [
-        { "name": "Hotel Colonial", "zone": "Quartiere Gotico", "description": "Ottimo hotel 4 stelle nel cuore del centro storico, vicino a molte attrazioni.", "coordinates": { "lat": 41.3854, "lng": 2.1802 } },
-        { "name": "Praktik Rambla", "zone": "Eixample", "description": "Boutique hotel con un design unico, perfetto per chi ama lo shopping e l'architettura.", "coordinates": { "lat": 41.3904, "lng": 2.1658 } }
-    ],
-    "potentialIssues": "Attenzione ai borseggiatori nelle zone turistiche affollate come La Rambla. I taxi possono essere costosi; preferire la metropolitana.",
-    "costEstimates": {
-      "accommodation": "120€-250€/notte",
-      "transport": "25€/giorno",
-      "meals": "60€/giorno",
-      "activities": "40€/giorno"
-    },
-    "weatherForecast": "Soleggiato, 25°C. In caso di pioggia, visita musei come il Museo Picasso.",
-    "localEvents": "Durante il tuo soggiorno si svolge la 'Festa de la Mercè', la festa patronale di Barcellona, con parate di giganti, castelli umani e concerti gratuiti in tutta la città."
-  }
+  Esempio di Output JSON per un giorno:
+  "itinerary": [
+    {
+      "day": "Giorno 1: 11 Agosto",
+      "activities": [
+        { "time": "09:30 - 10:00", "type": "transport", "description": "Spostamento verso il Colosseo", "details": "Metro Linea B, fermata Colosseo", "coordinates": null },
+        { "time": "10:00 - 12:30", "type": "activity", "description": "Visita al Colosseo, Foro Romano e Palatino", "details": "Colosseo", "coordinates": { "lat": 41.8902, "lng": 12.4922 } },
+        { "time": "13:00 - 14:00", "type": "food", "description": "Pranzo tipico romano", "details": "Hostaria da Nerone", "coordinates": { "lat": 41.8907, "lng": 12.4950 } },
+        { "time": "14:00 - 14:30", "type": "transport", "description": "Passeggiata verso i Musei Vaticani", "details": "Autobus linea 64", "coordinates": null }
+      ]
+    }
+  ],
+  // ... resto dell'output ...
 
   Restituisci l'output ESCLUSIVAMENTE in formato JSON valido. Non includere testo o commenti al di fuori del JSON.
   `,
