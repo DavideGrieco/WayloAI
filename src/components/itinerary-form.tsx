@@ -4,8 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Loader2, Wand2 } from 'lucide-react';
-import { DateRange } from 'react-day-picker';
+import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -16,13 +17,13 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent } from './ui/card';
 
 const formSchema = z.object({
-  destination: z.string().min(2, { message: 'Destination must be at least 2 characters.' }),
+  destination: z.string().min(2, { message: 'La destinazione deve avere almeno 2 caratteri.' }),
   dates: z.object({
-    from: z.date({ required_error: 'A start date is required.' }),
-    to: z.date({ required_error: 'An end date is required.' }),
+    from: z.date({ required_error: 'È richiesta una data di inizio.' }),
+    to: z.date({ required_error: 'È richiesta una data di fine.' }),
   }),
-  interests: z.string().min(3, { message: 'Please list at least one interest.' }),
-  budget: z.string().min(2, { message: 'Please provide a budget estimate.' }),
+  interests: z.string().min(3, { message: 'Elenca almeno un interesse.' }),
+  budget: z.string().min(2, { message: 'Fornisci una stima del budget.' }),
 });
 
 export type ItineraryFormValues = z.infer<typeof formSchema>;
@@ -54,9 +55,9 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                 name="destination"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Destination</FormLabel>
+                    <FormLabel>Destinazione</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Barcelona" {...field} />
+                      <Input placeholder="es. Barcellona" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -67,7 +68,7 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                 name="dates"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Trip Dates</FormLabel>
+                    <FormLabel>Date del viaggio</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -82,13 +83,14 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                             {field.value?.from ? (
                               field.value.to ? (
                                 <>
-                                  {format(field.value.from, 'LLL dd, y')} - {format(field.value.to, 'LLL dd, y')}
+                                  {format(field.value.from, 'LLL dd, y', { locale: it })} -{' '}
+                                  {format(field.value.to, 'LLL dd, y', { locale: it })}
                                 </>
                               ) : (
-                                format(field.value.from, 'LLL dd, y')
+                                format(field.value.from, 'LLL dd, y', { locale: it })
                               )
                             ) : (
-                              <span>Pick a date range</span>
+                              <span>Scegli un intervallo di date</span>
                             )}
                           </Button>
                         </FormControl>
@@ -101,6 +103,7 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                           selected={field.value as DateRange}
                           onSelect={field.onChange}
                           numberOfMonths={2}
+                          locale={it}
                           disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                         />
                       </PopoverContent>
@@ -114,9 +117,9 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                 name="interests"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Interests</FormLabel>
+                    <FormLabel>Interessi</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Culture, nature, gastronomy" {...field} />
+                      <Input placeholder="es. Cultura, natura, gastronomia" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -129,7 +132,7 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
                   <FormItem>
                     <FormLabel>Budget</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., $500 - $1000" {...field} />
+                      <Input placeholder="es. 500€ - 1000€" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,12 +148,12 @@ export function ItineraryForm({ onSubmit, isLoading, isUsageReady }: ItineraryFo
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
+                  Generazione...
                 </>
               ) : (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Itinerary
+                  Genera Itinerario
                 </>
               )}
             </Button>
