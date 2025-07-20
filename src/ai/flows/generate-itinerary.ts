@@ -21,6 +21,7 @@ const GenerateItineraryInputSchema = z.object({
   travelPace: z.string().describe("Il ritmo desiderato del viaggio (es. 'Rilassato', 'Moderato', 'Intenso')."),
   arrivalTime: z.string().optional().describe("L'orario di arrivo del primo giorno (es. '14:30'), per ottimizzare il primo giorno."),
   departureTime: z.string().optional().describe("L'orario di partenza dell'ultimo giorno (es. '18:00'), per ottimizzare l'ultimo giorno."),
+  hotelName: z.string().optional().describe("Il nome dell'hotel prenotato dall'utente. Se fornito, l'itinerario deve includere il check-in qui."),
 });
 
 export type GenerateItineraryInput = z.infer<typeof GenerateItineraryInputSchema>;
@@ -89,6 +90,7 @@ const itineraryPrompt = ai.definePrompt({
   - Ritmo del viaggio: {{travelPace}}
   {{#if arrivalTime}}- Orario di arrivo (primo giorno): {{arrivalTime}}{{/if}}
   {{#if departureTime}}- Orario di partenza (ultimo giorno): {{departureTime}}{{/if}}
+  {{#if hotelName}}- Hotel dell'utente: {{hotelName}}{{/if}}
 
   Istruzioni Obbligatorie:
   1.  Genera un itinerario giorno per giorno. L'output deve essere una guida completa e utilizzabile.
@@ -98,10 +100,11 @@ const itineraryPrompt = ai.definePrompt({
   5.  **Critico: Cerca attivamente eventuali feste, sagre, concerti, festività nazionali (es. Ferragosto il 15 Agosto) o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'. Sii molto accurato su questo punto.**
   6.  Ottimizza l'itinerario logisticamente e geograficamente. Includi gli spostamenti ('transport') tra le attività principali, specificando il mezzo (es. "Metro Linea A", "Autobus 64").
   7.  Tieni conto degli orari di arrivo e partenza per costruire il primo e l'ultimo giorno.
-  8.  Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'), con nomi di hotel REALI e cliccabili.
-  9.  Fornisci avvisi su potenziali problemi ('potentialIssues') come zone da evitare, scioperi, costi nascosti, ecc.
-  10. Fornisci previsioni meteorologiche essenziali ('weatherForecast').
-  11. Fornisci una stima dettagliata dei costi ('costEstimates').
+  8.  **Check-in Hotel:** Se l'utente fornisce un 'hotelName', l'itinerario del primo giorno deve includere un'attività di check-in presso quell'hotel. Se 'hotelName' non è fornito, il primo giorno dovrebbe includere un'attività generica come "Raggiungi la zona dell'alloggio e check-in".
+  9.  Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'), con nomi di hotel REALI e cliccabili, indipendentemente dal fatto che l'utente abbia fornito un nome di hotel.
+  10. Fornisci avvisi su potenziali problemi ('potentialIssues') come zone da evitare, scioperi, costi nascosti, ecc.
+  11. Fornisci previsioni meteorologiche essenziali ('weatherForecast').
+  12. Fornisci una stima dettagliata dei costi ('costEstimates').
 
   Requisiti di output:
   -   L'itinerario deve essere realistico e molto dettagliato, includendo la logistica degli spostamenti e nomi di luoghi reali.

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
 import { generateItinerary } from '@/ai/flows/generate-itinerary';
+import { generatePackingList, type GeneratePackingListOutput } from '@/ai/flows/generate-packing-list';
 import { AppHeader } from '@/components/app-header';
 import { ItineraryForm, type ItineraryFormValues } from '@/components/itinerary-form';
 import { ItineraryDisplay } from '@/components/itinerary-display';
@@ -15,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PlannerPage() {
   const [itineraryData, setItineraryData] = useState<GenerateItineraryOutput | null>(null);
+  const [packingListData, setPackingListData] = useState<GeneratePackingListOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
@@ -29,16 +31,32 @@ export default function PlannerPage() {
   const handleSubmit = async (data: ItineraryFormValues) => {
     setIsLoading(true);
     setItineraryData(null);
+    setPackingListData(null);
 
     try {
-      const result = await generateItinerary({
-        ...data,
-        startDate: data.dates.from?.toISOString().split('T')[0] ?? '',
-        endDate: data.dates.to?.toISOString().split('T')[0] ?? '',
-      });
-      setItineraryData(result);
+        const itineraryInput = {
+            ...data,
+            startDate: data.dates.from?.toISOString().split('T')[0] ?? '',
+            endDate: data.dates.to?.toISOString().split('T')[0] ?? '',
+        };
+        const packingListInput = {
+            destination: data.destination,
+            startDate: data.dates.from?.toISOString().split('T')[0] ?? '',
+            endDate: data.dates.to?.toISOString().split('T')[0] ?? '',
+            travelerType: data.travelerType,
+            interests: data.interests,
+        };
+
+      const [itineraryResult, packingListResult] = await Promise.all([
+        generateItinerary(itineraryInput),
+        generatePackingList(packingListInput),
+      ]);
+
+      setItineraryData(itineraryResult);
+      setPackingListData(packingListResult);
+
     } catch (error) {
-      console.error('Errore nella generazione dell\'itinerario:', error);
+      console.error('Errore nella generazione dell\'itinerario o della lista valigia:', error);
       toast({
         title: 'Si è verificato un errore',
         description: 'Non siamo riusciti a generare il tuo itinerario. Controlla i dati inseriti e riprova.',
@@ -90,7 +108,7 @@ export default function PlannerPage() {
             )}
             {!isLoading && itineraryData && (
               <div className="animate-in fade-in-50 duration-500">
-                <ItineraryDisplay data={itineraryData} />
+                <ItineraryDisplay itineraryData={itineraryData} packingListData={packingListData} />
               </div>
             )}
           </section>

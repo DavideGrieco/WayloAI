@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Clock, Loader2, Wand2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Loader2, Wand2, Hotel } from 'lucide-react';
 import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ const formSchema = z.object({
   travelPace: z.string({ required_error: 'Seleziona il ritmo del viaggio.' }),
   arrivalTime: z.string().optional(),
   departureTime: z.string().optional(),
+  hotelName: z.string().optional(),
 });
 
 export type ItineraryFormValues = z.infer<typeof formSchema>;
@@ -49,6 +50,7 @@ export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
       travelPace: 'Moderato',
       arrivalTime: '',
       departureTime: '',
+      hotelName: '',
     },
   });
 
@@ -225,6 +227,23 @@ export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="hotelName"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Nome del tuo hotel</FormLabel>
+                    <div className="relative">
+                        <Hotel className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <FormControl>
+                        <Input placeholder="es. Grand Hotel Plaza" {...field} className="pl-10"/>
+                        </FormControl>
+                    </div>
+                    <FormDescription>Opzionale. Se lo conosci, l'IA includerà il check-in nel tuo itinerario.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             <Button
               type="submit"
@@ -240,7 +259,7 @@ export function ItineraryForm({ onSubmit, isLoading }: ItineraryFormProps) {
               ) : (
                 <>
                   <Wand2 className="mr-2 h-4 w-4" />
-                  Genera Itinerario
+                  Genera Itinerario e Checklist Valigia
                 </>
               )}
             </Button>

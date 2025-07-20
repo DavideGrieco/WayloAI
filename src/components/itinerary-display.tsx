@@ -1,14 +1,17 @@
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { GeneratePackingListOutput } from '@/ai/flows/generate-packing-list';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 interface ItineraryDisplayProps {
-  data: GenerateItineraryOutput;
+  itineraryData: GenerateItineraryOutput;
+  packingListData: GeneratePackingListOutput | null;
 }
 
 const InfoCard = ({ icon, title, content, className }: { icon: React.ReactNode, title: string, content: string | React.ReactNode, className?: string }) => (
@@ -35,7 +38,6 @@ const ActivityTimeline = ({ activities }: { activities: GenerateItineraryOutput[
 
     return (
         <div className="relative pl-8">
-            {/* Vertical line */}
             <div className="absolute left-3 top-0 h-full w-0.5 bg-border"></div>
             
             <div className="space-y-8">
@@ -43,7 +45,6 @@ const ActivityTimeline = ({ activities }: { activities: GenerateItineraryOutput[
                     const mapsUrl = activity.coordinates ? `https://www.google.com/maps/search/?api=1&query=${activity.coordinates.lat},${activity.coordinates.lng}` : null;
                     return (
                         <div key={index} className="relative flex items-start">
-                            {/* Icon on the timeline */}
                             <div className="absolute -left-0.5 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-background">
                                 {getIconForType(activity.type)}
                             </div>
@@ -92,118 +93,179 @@ const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput
     );
   };
 
+  const getPackingCategoryIcon = (category: string) => {
+    const cat = category.toLowerCase();
+    if (cat.includes('abbigliamento')) return <Shirt className="h-6 w-6 text-blue-500" />;
+    if (cat.includes('documenti')) return <FileText className="h-6 w-6 text-red-500" />;
+    if (cat.includes('elettronica')) return <Router className="h-6 w-6 text-gray-500" />;
+    if (cat.includes('articoli da toeletta') || cat.includes('farmaci')) return <Stethoscope className="h-6 w-6 text-green-500" />;
+    if (cat.includes('extra')) return <Sparkles className="h-6 w-6 text-yellow-500" />;
+    return <Briefcase className="h-6 w-6 text-muted-foreground" />;
+};
 
-export function ItineraryDisplay({ data }: ItineraryDisplayProps) {
-  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = data;
+const PackingListDisplay = ({ data }: { data: GeneratePackingListOutput }) => {
+  return (
+    <div className="space-y-6 pt-6">
+       <Card className="bg-accent/10 border-accent">
+          <CardHeader>
+            <CardTitle>Consiglio Pro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{data.generalAdvice}</p>
+          </CardContent>
+      </Card>
+
+      <Accordion type="multiple" defaultValue={data.packingList.map(c => c.category)} className="w-full">
+        {data.packingList.map((category, index) => (
+          <AccordionItem key={index} value={category.category}>
+            <AccordionTrigger className="text-lg font-semibold">
+              <div className="flex items-center gap-3">
+                {getPackingCategoryIcon(category.category)}
+                {category.category}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ul className="space-y-3 pl-4">
+                {category.items.map((item, itemIndex) => (
+                  <li key={itemIndex} className="flex flex-col">
+                    <div className='flex items-center justify-between'>
+                      <span className="font-medium">{item.name}</span>
+                      <span className="text-sm font-bold text-primary bg-primary/10 px-2 py-1 rounded-md">{item.quantity}</span>
+                    </div>
+                    {item.notes && <p className="text-xs text-muted-foreground mt-1 ml-1">{item.notes}</p>}
+                  </li>
+                ))}
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  );
+};
+
+export function ItineraryDisplay({ itineraryData, packingListData }: ItineraryDisplayProps) {
+  const { itinerary, costEstimates, accommodationSuggestions, weatherForecast, potentialIssues, localEvents } = itineraryData;
 
   return (
     <div className="space-y-8">
       <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
+      <Tabs defaultValue="itinerary" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="itinerary">Itinerario</TabsTrigger>
+            <TabsTrigger value="packing" disabled={!packingListData}>Valigia</TabsTrigger>
+        </TabsList>
+        <TabsContent value="itinerary">
+            <div className="space-y-8 pt-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    {costEstimates ? (
+                        <>
+                            <InfoCard icon={<Wallet className="h-5 w-5" />} title="Alloggio" content={costEstimates.accommodation} className="bg-blue-50 dark:bg-blue-900/20" />
+                            <InfoCard icon={<Bus className="h-5 w-5" />} title="Trasporti" content={costEstimates.transport} className="bg-green-50 dark:bg-green-900/20" />
+                            <InfoCard icon={<Utensils className="h-5 w-5" />} title="Pasti" content={costEstimates.meals} className="bg-orange-50 dark:bg-orange-900/20" />
+                            <InfoCard icon={<Landmark className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
+                        </>
+                    ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
+                </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {costEstimates ? (
-            <>
-                <InfoCard icon={<Wallet className="h-5 w-5" />} title="Alloggio" content={costEstimates.accommodation} className="bg-blue-50 dark:bg-blue-900/20" />
-                <InfoCard icon={<Bus className="h-5 w-5" />} title="Trasporti" content={costEstimates.transport} className="bg-green-50 dark:bg-green-900/20" />
-                <InfoCard icon={<Utensils className="h-5 w-5" />} title="Pasti" content={costEstimates.meals} className="bg-orange-50 dark:bg-orange-900/20" />
-                <InfoCard icon={<Landmark className="h-5 w-5" />} title="Attività" content={costEstimates.activities} className="bg-purple-50 dark:bg-purple-900/20" />
-            </>
-        ) : <Card><CardContent><p className="p-4">Stime dei costi non disponibili.</p></CardContent></Card>}
-      </div>
-
-        {itinerary && itinerary.length > 0 ? (
-          <Card>
-            <CardHeader>
-                <CardTitle>Piano Giornaliero</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <Tabs defaultValue="day-0" className="w-full">
-                  <ScrollArea className="w-full whitespace-nowrap">
-                    <TabsList className="p-0 bg-transparent">
+                {itinerary && itinerary.length > 0 ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Piano Giornaliero</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Tabs defaultValue="day-0" className="w-full">
+                        <ScrollArea className="w-full whitespace-nowrap">
+                            <TabsList className="p-0 bg-transparent">
+                                {itinerary.map((day, index) => (
+                                    <TabsTrigger 
+                                        key={index} 
+                                        value={`day-${index}`}
+                                        className="mx-1 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-card data-[state=inactive]:text-foreground"
+                                    >
+                                        {day.day}
+                                    </TabsTrigger>
+                                ))}
+                            </TabsList>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
                         {itinerary.map((day, index) => (
-                            <TabsTrigger 
-                                key={index} 
-                                value={`day-${index}`}
-                                className="mx-1 data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md data-[state=inactive]:bg-card data-[state=inactive]:text-foreground"
-                            >
-                                {day.day}
-                            </TabsTrigger>
+                            <TabsContent key={index} value={`day-${index}`}>
+                                <div className="pt-6 border-t mt-4">
+                                    <ActivityTimeline activities={day.activities} />
+                                </div>
+                            </TabsContent>
                         ))}
-                    </TabsList>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
-                  {itinerary.map((day, index) => (
-                      <TabsContent key={index} value={`day-${index}`}>
-                        <div className="pt-6 border-t mt-4">
-                            <ActivityTimeline activities={day.activities} />
-                        </div>
-                      </TabsContent>
-                  ))}
-                </Tabs>
-            </CardContent>
-          </Card>
-        ) : (
-            <Card>
-                <CardContent>
-                    <p className="p-6 text-center text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
-                </CardContent>
-            </Card>
-        )}
-      
-      <div className="grid gap-4 md:grid-cols-1">
-        <Card>
-            <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                <BedDouble className="h-6 w-6 text-primary" />
-                <CardTitle>Dove Alloggiare</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {accommodationSuggestions && accommodationSuggestions.length > 0 ? (
-                    <div className="space-y-2">
-                        {accommodationSuggestions.map((suggestion, index) => (
-                            <AccommodationCard key={index} suggestion={suggestion} />
-                        ))}
-                    </div>
+                        </Tabs>
+                    </CardContent>
+                </Card>
                 ) : (
-                    <p className="text-muted-foreground">Nessun suggerimento specifico per l'alloggio disponibile.</p>
+                    <Card>
+                        <CardContent>
+                            <p className="p-6 text-center text-muted-foreground">L'itinerario non è stato generato correttamente.</p>
+                        </CardContent>
+                    </Card>
                 )}
-            </CardContent>
-        </Card>
-      </div>
-      
-      {localEvents && localEvents.toLowerCase() !== 'nessun evento speciale previsto' && (
-          <Card>
-              <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                  <PartyPopper className="h-6 w-6 text-accent" />
-                  <CardTitle>Eventi Locali</CardTitle>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-muted-foreground">{localEvents}</p>
-              </CardContent>
-          </Card>
-      )}
+            
+                <div className="grid gap-4 md:grid-cols-1">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                            <BedDouble className="h-6 w-6 text-primary" />
+                            <CardTitle>Dove Alloggiare</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {accommodationSuggestions && accommodationSuggestions.length > 0 ? (
+                                <div className="space-y-2">
+                                    {accommodationSuggestions.map((suggestion, index) => (
+                                        <AccommodationCard key={index} suggestion={suggestion} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground">Nessun suggerimento specifico per l'alloggio disponibile.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                {localEvents && localEvents.toLowerCase() !== 'nessun evento speciale previsto' && (
+                    <Card>
+                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                            <PartyPopper className="h-6 w-6 text-accent" />
+                            <CardTitle>Eventi Locali</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{localEvents}</p>
+                        </CardContent>
+                    </Card>
+                )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-            <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
-                <CardTitle>Avvisi di Viaggio</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">{potentialIssues}</p>
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center gap-2 space-y-0">
-                <Sun className="h-6 w-6 text-yellow-500" />
-                <CloudRain className="h-6 w-6 text-blue-400" />
-                <CardTitle>Meteo e Piani di Riserva</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">{weatherForecast}</p>
-            </CardContent>
-        </Card>
-      </div>
-
+                <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                            <AlertTriangle className="h-6 w-6 text-destructive" />
+                            <CardTitle>Avvisi di Viaggio</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{potentialIssues}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center gap-2 space-y-0">
+                            <Sun className="h-6 w-6 text-yellow-500" />
+                            <CloudRain className="h-6 w-6 text-blue-400" />
+                            <CardTitle>Meteo e Piani di Riserva</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-muted-foreground">{weatherForecast}</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        </TabsContent>
+        <TabsContent value="packing">
+            {packingListData ? <PackingListDisplay data={packingListData} /> : <p>Lista valigia in preparazione...</p>}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
