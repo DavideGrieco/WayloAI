@@ -8,6 +8,7 @@ import { getTripById, deleteTrip, updateTrip, type TripData } from '@/services/t
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 import { ItineraryDisplay } from '@/components/itinerary-display';
+import { ItineraryChat } from '@/components/itinerary-chat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Edit, Trash2, Loader2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -166,8 +167,6 @@ export default function SavedTripPage() {
   }
 
   if (!trip) {
-    // This state can be reached if a trip is not found or after deletion.
-    // We already show an error message if there's an error, so a simple message is enough here.
     return (
         <div className="flex flex-col min-h-screen bg-background">
             <AppHeader />
@@ -249,12 +248,15 @@ export default function SavedTripPage() {
                 <p className="text-muted-foreground">Applico le tue modifiche all'itinerario!</p>
               </div>
             ) : (
-              <ItineraryDisplay 
-                  itineraryData={trip.itineraryData} 
-                  packingListData={trip.packingListData}
-                  isSavedTrip={true}
-                  formValues={trip.formValues}
-              />
+                <>
+                    <ItineraryDisplay 
+                        itineraryData={trip.itineraryData} 
+                        packingListData={trip.packingListData}
+                        isSavedTrip={true}
+                        formValues={trip.formValues}
+                    />
+                    <ItineraryChat trip={trip} />
+                </>
             )}
         </div>
       </main>

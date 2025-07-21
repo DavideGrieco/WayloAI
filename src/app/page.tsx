@@ -6,7 +6,7 @@ import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, BrainCircuit, ListChecks, Star } from 'lucide-react';
+import { CheckCircle, BrainCircuit, ListChecks, MessageSquareQuote, Star } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -74,7 +74,7 @@ export default function LandingPage() {
                 Semplifichiamo la pianificazione del viaggio con strumenti intelligenti progettati per te.
               </p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               <FeatureCard 
                 icon={<BrainCircuit className="h-8 w-8" />}
                 title="Itinerari AI-Powered"
@@ -88,7 +88,12 @@ export default function LandingPage() {
               <FeatureCard 
                 icon={<Star className="h-8 w-8" />}
                 title="Salva e Modifica i Viaggi"
-                description="Gli utenti Premium possono salvare, rivedere e modificare i loro itinerari in qualsiasi momento, anche con l'aiuto dell'AI."
+                description="Salva, rivedi e modifica i tuoi itinerari in qualsiasi momento, anche con l'aiuto dell'AI."
+              />
+               <FeatureCard 
+                icon={<MessageSquareQuote className="h-8 w-8" />}
+                title="Chat Contestuale"
+                description="Chiedi consigli e informazioni direttamente al tuo itinerario. L'AI risponderà basandosi solo sul tuo piano di viaggio."
               />
             </div>
           </div>
@@ -154,6 +159,7 @@ export default function LandingPage() {
                   "Accesso completo a itinerario e lista valigia",
                   "Salvataggio e storico dei viaggi",
                   "Modifica itinerari con l'AI",
+                  "Chat contestuale con l'itinerario",
                   "Supporto prioritario",
                 ]}
                 isFeatured
