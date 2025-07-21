@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -80,7 +81,7 @@ const itineraryPrompt = ai.definePrompt({
   output: {schema: GenerateItineraryOutputSchema},
   prompt: `Sei un assistente di viaggio AI chiamato Waylo. Il tuo obiettivo è generare un itinerario personalizzato, estremamente dettagliato e realistico per l'utente, basandoti su dati precisi. La risposta DEVE essere in italiano e l'output DEVE essere in formato JSON valido. Per ogni luogo, fornisci nomi REALI e coordinate geografiche PRECISE.
 
-  Dati utente:
+  Dati utente (questi dati hanno la priorità su tutto):
   - Destinazione: {{destination}}
   - Data di inizio: {{startDate}}
   - Data di fine: {{endDate}}
@@ -93,22 +94,18 @@ const itineraryPrompt = ai.definePrompt({
   {{#if hotelName}}- Hotel dell'utente: {{hotelName}}{{/if}}
 
   Istruzioni Obbligatorie:
-  1.  Genera un itinerario giorno per giorno. L'output deve essere una guida completa e utilizzabile.
-  2.  Per ogni giorno, il campo 'day' deve includere sia il numero del giorno che la data (es. "Giorno 1: 11 Agosto").
-  3.  Ogni evento nella lista 'activities' deve essere un oggetto con 'time' (es. "10:00 - 11:30"), 'type' ('activity', 'food', o 'transport'), 'description', 'details' (che deve contenere il nome REALE e SPECIFICO del luogo, es. "Colosseo", "Trattoria da Enzo al 29"), e 'coordinates'.
-  4.  I nomi dei luoghi ('details') devono essere reali e verificabili. Non inventare nomi.
-  5.  **Critico: Cerca attivamente eventuali feste, sagre, concerti, festività nazionali (es. Ferragosto il 15 Agosto) o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'. Sii molto accurato su questo punto.**
-  6.  Ottimizza l'itinerario logisticamente e geograficamente. Includi gli spostamenti ('transport') tra le attività principali, specificando il mezzo (es. "Metro Linea A", "Autobus 64").
-  7.  Tieni conto degli orari di arrivo e partenza per costruire il primo e l'ultimo giorno.
-  8.  **Check-in Hotel:** Se l'utente fornisce un 'hotelName', l'itinerario del primo giorno deve includere un'attività di check-in presso quell'hotel. Se 'hotelName' non è fornito, il primo giorno dovrebbe includere un'attività generica come "Raggiungi la zona dell'alloggio e check-in".
-  9.  Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'), con nomi di hotel REALI e cliccabili, indipendentemente dal fatto che l'utente abbia fornito un nome di hotel.
-  10. Fornisci avvisi su potenziali problemi ('potentialIssues') come zone da evitare, scioperi, costi nascosti, ecc.
-  11. Fornisci previsioni meteorologiche essenziali ('weatherForecast').
-  12. Fornisci una stima dettagliata dei costi ('costEstimates').
-
-  Requisiti di output:
-  -   L'itinerario deve essere realistico e molto dettagliato, includendo la logistica degli spostamenti e nomi di luoghi reali.
-  -   Il tono deve essere pratico, chiaro e amichevole.
+  1.  **Priorità all'Utente:** Le informazioni fornite dall'utente sono la fonte primaria di verità. Costruisci l'itinerario attorno a queste.
+  2.  **Non Inventare Dettagli:** Se l'utente non fornisce informazioni specifiche su voli (es. numero volo) o hotel, NON inventarle. L'itinerario deve riflettere solo le informazioni a disposizione, concentrandosi sulle tappe e attività.
+  3.  **Itinerario Dettagliato:** Genera un itinerario giorno per giorno. L'output deve essere una guida completa e utilizzabile.
+  4.  **Formato Giorno:** Per ogni giorno, il campo 'day' deve includere sia il numero del giorno che la data (es. "Giorno 1: 11 Agosto").
+  5.  **Formato Attività:** Ogni evento nella lista 'activities' deve essere un oggetto con 'time' (es. "10:00 - 11:30"), 'type' ('activity', 'food', o 'transport'), 'description', 'details' (che deve contenere il nome REALE e SPECIFICO del luogo, es. "Colosseo", "Trattoria da Enzo al 29"), e 'coordinates'.
+  6.  **Nomi Reali:** I nomi dei luoghi ('details') devono essere reali e verificabili. Non inventare nomi.
+  7.  **Eventi Locali:** Cerca attivamente eventuali feste, sagre, concerti, festività nazionali (es. Ferragosto il 15 Agosto) o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'. Sii molto accurato su questo punto.
+  8.  **Logistica:** Ottimizza l'itinerario logisticamente e geograficamente. Includi gli spostamenti ('transport') tra le attività principali, specificando il mezzo (es. "Metro Linea A", "Autobus 64").
+  9.  **Arrivo e Partenza:** Tieni conto degli orari di arrivo e partenza per costruire il primo e l'ultimo giorno.
+  10. **Check-in Hotel:** Se l'utente fornisce un 'hotelName', l'itinerario del primo giorno deve includere un'attività di check-in presso quell'hotel. Se 'hotelName' non è fornito, il primo giorno dovrebbe includere un'attività generica come "Raggiungi la zona dell'alloggio e check-in".
+  11. **Suggerimenti Alloggio:** Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'), con nomi di hotel REALI e cliccabili, indipendentemente dal fatto che l'utente abbia fornito un nome di hotel.
+  12. **Avvisi e Previsioni:** Fornisci avvisi su potenziali problemi ('potentialIssues'), previsioni meteorologiche essenziali ('weatherForecast'), e una stima dettagliata dei costi ('costEstimates').
 
   Esempio di Output JSON per un'attività:
   {
