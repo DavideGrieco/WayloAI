@@ -32,17 +32,24 @@ export function ItineraryChat({ trip }: ItineraryChatProps) {
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        // Auto-scroll to bottom
+        const scrollArea = scrollAreaRef.current;
+        if (scrollArea) {
+           const viewport = scrollArea.querySelector('div');
+           if(viewport) {
+             viewport.scrollTop = viewport.scrollHeight;
+           }
         }
     }, [messages]);
+
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
         const newUserMessage: Message = { role: 'user', content: input };
-        setMessages(prev => [...prev, newUserMessage]);
+        const newMessages = [...messages, newUserMessage];
+        setMessages(newMessages);
         setInput('');
         setIsLoading(true);
 
@@ -50,7 +57,7 @@ export function ItineraryChat({ trip }: ItineraryChatProps) {
             const result = await chatWithItinerary({
                 itineraryJson: JSON.stringify(trip.itineraryData),
                 userQuery: input,
-                history: messages
+                history: messages // Pass the history before the new message
             });
             
             const aiResponse: Message = { role: 'model', content: result.response };
@@ -80,8 +87,8 @@ export function ItineraryChat({ trip }: ItineraryChatProps) {
             </CardHeader>
             <CardContent>
                 <div className="h-[400px] flex flex-col">
-                     <ScrollArea className="flex-1 pr-4 -mr-4 mb-4">
-                        <div ref={scrollAreaRef} className="space-y-6">
+                     <ScrollArea className="flex-1 pr-4 -mr-4 mb-4" ref={scrollAreaRef}>
+                        <div className="space-y-6">
                             {messages.map((message, index) => (
                                 <div
                                     key={index}

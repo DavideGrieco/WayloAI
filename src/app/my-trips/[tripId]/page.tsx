@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
 import { getTripById, deleteTrip, updateTrip, type TripData } from '@/services/trips-service';
@@ -10,13 +10,16 @@ import { AppFooter } from '@/components/app-footer';
 import { ItineraryDisplay } from '@/components/itinerary-display';
 import { ItineraryChat } from '@/components/itinerary-chat';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, Edit, Trash2, Loader2, Wand2 } from 'lucide-react';
+import { AlertTriangle, Edit, Trash2, Loader2, Wand2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { editItinerary, type EditItineraryInput } from '@/ai/flows/edit-itinerary';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 export default function SavedTripPage() {
   const { user, loading: authLoading } = useAuth();
@@ -27,10 +30,13 @@ export default function SavedTripPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editRequest, setEditRequest] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const router = useRouter();
   const params = useParams();
   const tripId = params.tripId as string;
   const { toast } = useToast();
+  const printRef = useRef<HTMLDivElement>(null);
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -134,6 +140,40 @@ export default function SavedTripPage() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!printRef.current) return;
+    setIsDownloadingPdf(true);
+    try {
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2, // Migliora la qualità dell'immagine
+        useCORS: true,
+        backgroundColor: null,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height],
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.save(`itinerario-${trip?.destination}.pdf`);
+       toast({
+        title: "Download avviato",
+        description: "Il tuo itinerario in PDF è stato generato.",
+      });
+    } catch (e) {
+      console.error("Errore durante la generazione del PDF:", e);
+      toast({
+        title: "Errore PDF",
+        description: "Non è stato possibile creare il file PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
+
   if (authLoading || isLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
@@ -187,6 +227,11 @@ export default function SavedTripPage() {
             <div className='flex justify-between items-center mb-8'>
                 <h1 className="text-4xl font-bold text-foreground">Itinerario per {trip.destination}</h1>
                 <div className='flex gap-2'>
+                    <Button onClick={handleDownloadPdf} variant="outline" disabled={isDownloadingPdf}>
+                      {isDownloadingPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <FileDown className="mr-2 h-4 w-4" />}
+                      Scarica PDF
+                    </Button>
+
                     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                       <DialogTrigger asChild>
                         <Button variant="outline"><Edit className="mr-2 h-4 w-4" /> Modifica con AI</Button>
@@ -248,7 +293,7 @@ export default function SavedTripPage() {
                 <p className="text-muted-foreground">Applico le tue modifiche all'itinerario!</p>
               </div>
             ) : (
-                <>
+                <div ref={printRef} className="bg-background p-4">
                     <ItineraryDisplay 
                         itineraryData={trip.itineraryData} 
                         packingListData={trip.packingListData}
@@ -256,7 +301,7 @@ export default function SavedTripPage() {
                         formValues={trip.formValues}
                     />
                     <ItineraryChat trip={trip} />
-                </>
+                </div>
             )}
         </div>
       </main>

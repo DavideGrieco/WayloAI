@@ -6,7 +6,7 @@ import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, BrainCircuit, ListChecks, MessageSquareQuote, Star } from 'lucide-react';
+import { CheckCircle, BrainCircuit, ListChecks, MessageSquareQuote, Star, FileDown, MessageCircleHeart } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
@@ -85,15 +85,15 @@ export default function LandingPage() {
                 title="Checklist Valigia Intelligente"
                 description="Non dimenticare più nulla. Genera una checklist completa basata sulla destinazione, il meteo e le attività previste."
               />
-              <FeatureCard 
-                icon={<Star className="h-8 w-8" />}
-                title="Salva e Modifica i Viaggi"
-                description="Salva, rivedi e modifica i tuoi itinerari in qualsiasi momento, anche con l'aiuto dell'AI."
+               <FeatureCard 
+                icon={<MessageCircleHeart className="h-8 w-8" />}
+                title="Chat Contestuale con Memoria"
+                description="Chiedi consigli al tuo itinerario. L'AI risponderà ricordando il contesto della vostra conversazione."
               />
                <FeatureCard 
-                icon={<MessageSquareQuote className="h-8 w-8" />}
-                title="Chat Contestuale"
-                description="Chiedi consigli e informazioni direttamente al tuo itinerario. L'AI risponderà basandosi solo sul tuo piano di viaggio."
+                icon={<FileDown className="h-8 w-8" />}
+                title="Salva e Scarica in PDF"
+                description="Salva i tuoi viaggi per accedervi in futuro e scarica una versione PDF da portare con te."
               />
             </div>
           </div>
@@ -159,7 +159,8 @@ export default function LandingPage() {
                   "Accesso completo a itinerario e lista valigia",
                   "Salvataggio e storico dei viaggi",
                   "Modifica itinerari con l'AI",
-                  "Chat contestuale con l'itinerario",
+                  "Chat contestuale con memoria",
+                  "Download itinerario in PDF",
                   "Supporto prioritario",
                 ]}
                 isFeatured
