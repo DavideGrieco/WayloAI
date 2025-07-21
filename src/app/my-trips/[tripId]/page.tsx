@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -14,8 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
-import { editItinerary, EditItineraryInput } from '@/ai/flows/edit-itinerary';
-import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
+import { editItinerary, type EditItineraryInput } from '@/ai/flows/edit-itinerary';
 
 export default function SavedTripPage() {
   const { user, loading: authLoading } = useAuth();
@@ -32,35 +32,38 @@ export default function SavedTripPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/');
-        return;
-      }
+    if (authLoading) return;
+    
+    if (!user) {
+      router.push('/');
+      return;
+    }
 
-      if (tripId) {
-        const fetchTrip = async () => {
-          setIsLoading(true);
-          try {
-            const tripData = await getTripById(tripId);
-            if (!tripData || tripData.userId !== user.uid) {
-              setError("Viaggio non trovato o non hai i permessi per vederlo.");
-            } else {
-              setTrip(tripData);
-            }
-          } catch (e) {
-            setError("Si è verificato un errore nel caricamento del viaggio.");
-            console.error(e);
-          } finally {
-            setIsLoading(false);
+    if (tripId) {
+      const fetchTrip = async () => {
+        setIsLoading(true);
+        try {
+          const tripData = await getTripById(tripId);
+          if (!tripData || tripData.userId !== user.uid) {
+            setError("Viaggio non trovato o non hai i permessi per vederlo.");
+            setTrip(null);
+          } else {
+            setTrip(tripData);
           }
-        };
-        fetchTrip();
-      }
+        } catch (e) {
+          setError("Si è verificato un errore nel caricamento del viaggio.");
+          console.error(e);
+          setTrip(null);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchTrip();
     }
   }, [user, authLoading, router, tripId]);
   
   const handleDelete = async () => {
+    if (!tripId) return;
     setIsDeleting(true);
     try {
         await deleteTrip(tripId);
@@ -80,7 +83,7 @@ export default function SavedTripPage() {
   }
 
   const handleEditRequest = async () => {
-    if (!editRequest || !trip || !trip.formValues) return;
+    if (!editRequest || !trip || !trip.formValues || !trip.id) return;
     setIsEditing(true);
 
     try {
@@ -103,12 +106,12 @@ export default function SavedTripPage() {
       
       const updatedItinerary = await editItinerary(input);
 
-      const updatedTripData: TripData = {
+      const updatedTripData = {
         ...trip,
         itineraryData: updatedItinerary,
       };
 
-      await updateTrip(tripId, { itineraryData: updatedItinerary });
+      await updateTrip(trip.id, { itineraryData: updatedItinerary });
       setTrip(updatedTripData);
 
       toast({
@@ -163,11 +166,14 @@ export default function SavedTripPage() {
   }
 
   if (!trip) {
+    // This state can be reached if a trip is not found or after deletion.
+    // We already show an error message if there's an error, so a simple message is enough here.
     return (
         <div className="flex flex-col min-h-screen bg-background">
             <AppHeader />
             <main className="flex-1 container mx-auto px-4 py-8 text-center">
-                <p>Viaggio non trovato.</p>
+                <p>Caricamento viaggio o viaggio non trovato.</p>
+                <Button onClick={() => router.push('/my-trips')} className="mt-6">Torna ai tuoi viaggi</Button>
             </main>
             <AppFooter />
         </div>

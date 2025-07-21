@@ -16,10 +16,10 @@ export interface TripData {
     itineraryData: GenerateItineraryOutput;
     packingListData: GeneratePackingListOutput | null;
     formValues: ItineraryFormValues | null;
-    createdAt: any; 
+    createdAt?: any; 
 }
 
-// Interface for how trip data is stored in Firestore
+// This interface reflects how data is structured in Firestore, with dates as strings
 interface TripDocument {
     userId: string;
     destination: string;
@@ -27,55 +27,35 @@ interface TripDocument {
     endDate: string;
     itineraryData: GenerateItineraryOutput;
     packingListData: GeneratePackingListOutput | null;
-    formValues: Omit<ItineraryFormValues, 'dates'> & {
+    formValues: {
+        [key: string]: any; // Allows for flexible form values
         dates: {
             from: string;
             to: string;
-        }
+        };
     } | null;
     createdAt: any;
 }
 
 
 /**
- * Salva un nuovo viaggio nel database.
+ * Converts a Firestore document into the TripData format for the app,
+ * properly handling date conversions.
+ * @param doc The Firestore document snapshot.
+ * @returns A TripData object.
  */
-export async function saveTrip(tripData: Omit<TripData, 'id' | 'createdAt'>): Promise<{ id: string }> {
-  try {
-    const dataToSave: Omit<TripDocument, 'createdAt'> = {
-        ...tripData,
-        formValues: tripData.formValues ? {
-            ...tripData.formValues,
-            dates: {
-                from: tripData.formValues.dates.from.toISOString(),
-                to: tripData.formValues.dates.to.toISOString(),
-            }
-        } : null
-    };
-
-    const docRef = await addDoc(collection(db, 'trips'), {
-      ...dataToSave,
-      createdAt: serverTimestamp(),
-    });
-    return { id: docRef.id };
-  } catch (error) {
-    console.error('Errore durante il salvataggio del viaggio:', error);
-    throw new Error('Impossibile salvare il viaggio.');
-  }
-}
-
 function docToTripData(doc: any): TripData {
     const data = doc.data() as TripDocument;
     
     let formValues: ItineraryFormValues | null = null;
-    if (data.formValues) {
+    if (data.formValues && data.formValues.dates) {
         formValues = {
             ...data.formValues,
             dates: {
                 from: new Date(data.formValues.dates.from),
                 to: new Date(data.formValues.dates.to)
             }
-        };
+        } as ItineraryFormValues;
     }
 
     return {
@@ -93,7 +73,45 @@ function docToTripData(doc: any): TripData {
 
 
 /**
- * Recupera tutti i viaggi per un dato utente.
+ * Saves a new trip to the database.
+ * Converts Date objects in formValues to ISO strings for Firestore compatibility.
+ */
+export async function saveTrip(tripData: Omit<TripData, 'id' | 'createdAt'>): Promise<{ id: string }> {
+  try {
+    let dataToSave: Omit<TripDocument, 'createdAt'>;
+
+    if (tripData.formValues) {
+        const { dates, ...otherFormValues } = tripData.formValues;
+        dataToSave = {
+            ...tripData,
+            formValues: {
+                ...otherFormValues,
+                dates: {
+                    from: dates.from.toISOString(),
+                    to: dates.to.toISOString(),
+                }
+            }
+        };
+    } else {
+        dataToSave = {
+            ...tripData,
+            formValues: null,
+        }
+    }
+
+    const docRef = await addDoc(collection(db, 'trips'), {
+      ...dataToSave,
+      createdAt: serverTimestamp(),
+    });
+    return { id: docRef.id };
+  } catch (error) {
+    console.error('Errore durante il salvataggio del viaggio:', error);
+    throw new Error('Impossibile salvare il viaggio.');
+  }
+}
+
+/**
+ * Retrieves all trips for a given user.
  */
 export async function getTripsForUser(userId: string): Promise<TripData[]> {
     try {
@@ -107,7 +125,7 @@ export async function getTripsForUser(userId: string): Promise<TripData[]> {
 }
 
 /**
- * Recupera un singolo viaggio tramite il suo ID.
+ * Retrieves a single trip by its ID.
  */
 export async function getTripById(tripId: string): Promise<TripData | null> {
     try {
@@ -117,6 +135,7 @@ export async function getTripById(tripId: string): Promise<TripData | null> {
         if (docSnap.exists()) {
             return docToTripData(docSnap);
         } else {
+            console.warn(`Trip with ID ${tripId} not found.`);
             return null;
         }
     } catch (error) {
@@ -127,7 +146,7 @@ export async function getTripById(tripId: string): Promise<TripData | null> {
 
 
 /**
- * Elimina un viaggio dal database.
+ * Deletes a trip from the database.
  */
 export async function deleteTrip(tripId: string): Promise<void> {
     try {
@@ -140,24 +159,32 @@ export async function deleteTrip(tripId: string): Promise<void> {
 }
 
 /**
- * Aggiorna un viaggio esistente nel database.
+ * Updates an existing trip in the database.
+ * Handles date conversions for formValues if they are present.
  */
 export async function updateTrip(tripId: string, updates: Partial<TripData>): Promise<void> {
     try {
         const docRef = doc(db, 'trips', tripId);
         
-        let dataToUpdate: Partial<TripDocument> = { ...updates };
+        let dataToUpdate: { [key: string]: any } = { ...updates };
 
-        if (updates.formValues) {
+        // Handle nested date object conversion if formValues are being updated
+        if (updates.formValues && updates.formValues.dates) {
+            const { dates, ...otherFormValues } = updates.formValues;
             dataToUpdate.formValues = {
-                ...updates.formValues,
+                ...otherFormValues,
                  dates: {
-                    from: updates.formValues.dates.from.toISOString(),
-                    to: updates.formValues.dates.to.toISOString(),
+                    from: dates.from.toISOString(),
+                    to: dates.to.toISOString(),
                 }
             };
+        } else if (updates.formValues) {
+             dataToUpdate.formValues = updates.formValues;
         }
-        
+
+        // Remove properties that shouldn't be in the final update object
+        delete dataToUpdate.id;
+
         await updateDoc(docRef, dataToUpdate);
     } catch (error) {
         console.error('Errore durante l\'aggiornamento del viaggio:', error);

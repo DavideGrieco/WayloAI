@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { GenerateItineraryOutput } from '@/ai/flows/generate-itinerary';
@@ -5,7 +6,7 @@ import type { GeneratePackingListOutput } from '@/ai/flows/generate-packing-list
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem, Crown, Save } from 'lucide-react';
+import { BedDouble, Bus, CloudRain, MapPin, Sun, Utensils, Wallet, AlertTriangle, Building, PartyPopper, Landmark, TramFront, Circle, Briefcase, Shirt, FileText, Router, Stethoscope, Sparkles, Footprints, Camera, BatteryCharging, BookOpen, Headphones, Plug, Pill, Glasses, Umbrella, Plane, Train, Car, Gem, Crown, Save, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import { useAuth } from '@/context/auth-context';
@@ -14,6 +15,7 @@ import { saveTrip } from '@/services/trips-service';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import type { ItineraryFormValues } from './itinerary-form';
+import { useRouter } from 'next/navigation';
 
 interface ItineraryDisplayProps {
   itineraryData: GenerateItineraryOutput;
@@ -114,33 +116,24 @@ const AccommodationCard = ({ suggestion }: { suggestion: GenerateItineraryOutput
 const getPackingItemIcon = (itemName: string): React.ReactNode => {
     const name = itemName.toLowerCase();
     
-    // Abbigliamento
     if (name.includes('pantaloni')) return <Gem className="text-blue-600" />;
     if (name.includes('camicia') || name.includes('magliett') || name.includes('top')) return <Shirt className="text-blue-500" />;
     if (name.includes('scarpe') || name.includes('stivali')) return <Footprints className="text-yellow-700" />;
-    if (name.includes('giacca') || name.includes('cappotto')) return <Gem className="text-gray-600" />; // Non c'è un'icona per giacca, uso Gem
+    if (name.includes('giacca') || name.includes('cappotto')) return <Gem className="text-gray-600" />;
     if (name.includes('calzini')) return <Gem className="text-gray-500" />;
     if (name.includes('occhiali')) return <Glasses className="text-purple-500" />;
     if (name.includes('costume')) return <Gem className="text-teal-500" />;
-
-    // Documenti
     if (name.includes('passaporto') || name.includes('carta d\'identità')) return <FileText className="text-red-600" />;
     if (name.includes('bigliett')) return <Plane className="text-red-500" />;
     if (name.includes('prenotazion')) return <BookOpen className="text-red-400" />;
-
-    // Elettronica
     if (name.includes('telefono') || name.includes('smartphone')) return <Router className="text-gray-700" />;
     if (name.includes('caricabatteri') || name.includes('power bank')) return <BatteryCharging className="text-gray-600" />;
     if (name.includes('adattatore')) return <Plug className="text-gray-500" />;
     if (name.includes('cuffie')) return <Headphones className="text-gray-800" />;
     if (name.includes('fotocamera')) return <Camera className="text-gray-900" />;
-    
-    // Articoli da toeletta & Farmaci
-    if (name.includes('spazzolino') || name.includes('dentifricio')) return <Gem className="text-green-600" />; // No icon for tooth
+    if (name.includes('spazzolino') || name.includes('dentifricio')) return <Gem className="text-green-600" />; 
     if (name.includes('farmaci') || name.includes('medicinali') || name.includes('kit primo soccorso')) return <Pill className="text-green-500" />;
     if (name.includes('crema solare')) return <Sun className="text-green-400" />;
-
-    // Extra
     if (name.includes('ombrello')) return <Umbrella className="text-yellow-500" />;
     if (name.includes('libro')) return <BookOpen className="text-yellow-600" />;
 
@@ -233,6 +226,7 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
     const { user, isPremium } = useAuth();
     const { toast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
+    const router = useRouter();
   
     const finalIsPremium = isPremium || isSavedTrip;
 
@@ -241,10 +235,17 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
     const hiddenDaysCount = itinerary.length - visibleDaysCount;
     
     const handleSaveTrip = async () => {
-        if (!user || !formValues) return;
+        if (!user || !formValues || !formValues.dates.from || !formValues.dates.to) {
+            toast({
+                title: "Errore",
+                description: "Dati del viaggio incompleti per il salvataggio.",
+                variant: 'destructive',
+            });
+            return;
+        }
         setIsSaving(true);
         try {
-            await saveTrip({
+            const result = await saveTrip({
                 userId: user.uid,
                 destination: formValues.destination,
                 startDate: formValues.dates.from.toISOString(),
@@ -256,8 +257,14 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
             toast({
                 title: "Viaggio salvato!",
                 description: "Puoi trovare il tuo itinerario nella sezione 'I Miei Viaggi'.",
+                action: (
+                  <Button variant="outline" size="sm" onClick={() => router.push(`/my-trips/${result.id}`)}>
+                    Visualizza
+                  </Button>
+                )
             });
         } catch (error) {
+            console.error(error);
             toast({
                 title: "Errore",
                 description: "Impossibile salvare il viaggio. Riprova.",
@@ -274,7 +281,7 @@ export function ItineraryDisplay({ itineraryData, packingListData, isSavedTrip =
             <h2 className="text-3xl font-bold text-center text-foreground font-headline">Il Tuo Itinerario Personalizzato</h2>
             {isPremium && !isSavedTrip && formValues && (
                 <Button onClick={handleSaveTrip} disabled={isSaving}>
-                    <Save className="mr-2 h-4 w-4"/>
+                    {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
                     {isSaving ? "Salvataggio..." : "Salva Viaggio"}
                 </Button>
             )}
