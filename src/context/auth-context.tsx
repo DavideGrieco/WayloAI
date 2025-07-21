@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      router.push('/planner');
+      // The redirect is now handled by the component that calls this function.
     } catch (error: any) {
       console.error("Errore di registrazione:", error);
       toast({
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-       router.push('/planner');
+       // The redirect is now handled by the component that calls this function.
     } catch (error: any) {
       console.error("Errore di accesso:", error);
        toast({

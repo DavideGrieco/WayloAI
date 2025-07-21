@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +21,11 @@ const formSchema = z.object({
     path: ["confirmPassword"],
 });
 
-export function Register() {
+interface RegisterProps {
+  onRegisterSuccess: () => void;
+}
+
+export function Register({ onRegisterSuccess }: RegisterProps) {
   const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -36,7 +41,7 @@ export function Register() {
     setIsLoading(true);
     try {
       await register(values.email, values.password);
-      // La gestione del reindirizzamento avverrà nel componente della pagina
+      onRegisterSuccess();
     } catch (error) {
       // La notifica di errore viene gestita nel contesto di autenticazione
     } finally {

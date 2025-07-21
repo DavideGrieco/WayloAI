@@ -20,6 +20,10 @@ export default function LoginPage() {
     return null; // or a loading spinner
   }
 
+  const handleAuthSuccess = () => {
+    router.push('/planner');
+  };
+
   return (
      <div className="flex flex-col min-h-screen bg-background">
       <AppHeader />
@@ -27,7 +31,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md p-8 space-y-8">
           {showLogin ? (
             <>
-              <Login />
+              <Login onLoginSuccess={handleAuthSuccess} />
               <p className="text-center text-sm text-muted-foreground">
                 Non hai un account?{' '}
                 <Button variant="link" className="p-0 h-auto" onClick={() => setShowLogin(false)}>
@@ -37,7 +41,7 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <Register />
+              <Register onRegisterSuccess={handleAuthSuccess} />
               <p className="text-center text-sm text-muted-foreground">
                 Hai già un account?{' '}
                 <Button variant="link" className="p-0 h-auto" onClick={() => setShowLogin(true)}>

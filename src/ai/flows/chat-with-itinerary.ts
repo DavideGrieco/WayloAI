@@ -1,54 +1,49 @@
+
 'use server';
 
 /**
- * @fileOverview Flow for chatting with an existing travel itinerary using Genkit.
- *
- * - chatWithItinerary - A function that takes an itinerary and a user query to provide contextual answers.
- * - ChatWithItineraryInput - The input type for the chatWithItinerary function.
- * - ChatWithItineraryOutput - The return type for the chatWithItinerary function.
+ * @fileOverview Flow per chattare con un itinerario di viaggio usando Genkit.
+ * Fornisce risposte basate sull’itinerario fornito, mantenendo il contesto della conversazione.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
-const ChatWithItineraryInputSchema = z.object({
-  itineraryJson: z.string().describe("The existing JSON travel itinerary as a string. This is the context for the conversation."),
-  userQuery: z.string().describe("The user's question about the itinerary."),
-  history: z.array(z.object({
-    role: z.enum(['user', 'model']),
-    content: z.string(),
-  })).optional().describe("The previous conversation history.")
+// Definisco uno schema per un singolo messaggio
+const MessageSchema = z.object({
+  role: z.enum(['user', 'model']),
+  content: z.string(),
 });
+
+// Schema input
+const ChatWithItineraryInputSchema = z.object({
+  itineraryJson: z.string().describe("Itinerario di viaggio in formato JSON come stringa."),
+  userQuery: z.string().describe("Domanda dell'utente sull'itinerario."),
+  history: z.array(MessageSchema).optional().describe("Storico della conversazione."),
+});
+
 export type ChatWithItineraryInput = z.infer<typeof ChatWithItineraryInputSchema>;
 
+// Schema output
 const ChatWithItineraryOutputSchema = z.object({
-    response: z.string().describe('The AI\'s response to the user query.'),
+  response: z.string().describe("Risposta dell’AI alla domanda dell’utente."),
 });
+
 export type ChatWithItineraryOutput = z.infer<typeof ChatWithItineraryOutputSchema>;
 
-
-export async function chatWithItinerary(input: ChatWithItineraryInput): Promise<ChatWithItineraryOutput> {
-  return chatWithItineraryFlow(input);
-}
-
-
+// Prompt AI
 const chatPrompt = ai.definePrompt({
   name: 'chatWithItineraryPrompt',
   input: { schema: ChatWithItineraryInputSchema },
   output: { schema: ChatWithItineraryOutputSchema },
-  prompt: `You are a helpful travel assistant. Your ONLY knowledge base is the travel itinerary provided below. You must answer the user's questions based exclusively on this itinerary. Do not use any external knowledge or make up information. If the user asks something that cannot be answered from the itinerary, politely state that you can only answer questions about this specific trip plan.
+  history: z.array(MessageSchema),
+  prompt: `You are a helpful and clever travel assistant. Your knowledge base is the travel itinerary provided below.
+Your main goal is to answer the user's questions based on the provided itinerary.
+You can make logical inferences from the itinerary data. For example, if asked about free time, you can identify gaps between scheduled activities.
+If a question is truly unrelated to the trip (e.g., "What is the capital of France?"), politely state that you can only answer questions about this specific trip plan.
 
 Itinerary Context:
 {{{itineraryJson}}}
-
----
-{{#if history}}
-Conversation History:
-{{#each history}}
-{{#if (eq role 'user')}}User: {{content}}{{/if}}
-{{#if (eq role 'model')}}Assistant: {{content}}{{/if}}
-{{/each}}
-{{/if}}
 
 ---
 User's new question: "{{userQuery}}"
@@ -57,6 +52,12 @@ Your response must be concise, helpful, and directly related to the provided iti
 `,
 });
 
+// Funzione principale
+export async function chatWithItinerary(input: ChatWithItineraryInput): Promise<ChatWithItineraryOutput> {
+  return chatWithItineraryFlow(input);
+}
+
+// Flow di esecuzione
 const chatWithItineraryFlow = ai.defineFlow(
   {
     name: 'chatWithItineraryFlow',
@@ -64,7 +65,21 @@ const chatWithItineraryFlow = ai.defineFlow(
     outputSchema: ChatWithItineraryOutputSchema,
   },
   async (input) => {
-    const { output } = await chatPrompt(input);
+    // Ricostruisci la cronologia per il prompt
+    const history = (input.history || []).map(msg => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Prepara l'input per il prompt, che ora gestisce direttamente la cronologia
+    const promptInput = {
+      itineraryJson: input.itineraryJson,
+      userQuery: input.userQuery,
+      history,
+    };
+    
+    const { output } = await chatPrompt(promptInput);
+
     return output!;
   }
 );

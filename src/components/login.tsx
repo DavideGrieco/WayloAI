@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +17,11 @@ const formSchema = z.object({
   password: z.string().min(6, { message: 'La password deve contenere almeno 6 caratteri.' }),
 });
 
-export function Login() {
+interface LoginProps {
+  onLoginSuccess: () => void;
+}
+
+export function Login({ onLoginSuccess }: LoginProps) {
   const { login } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
@@ -31,7 +36,7 @@ export function Login() {
     setIsLoading(true);
     try {
       await login(values.email, values.password);
-      // La gestione del reindirizzamento avverrà nel componente della pagina
+      onLoginSuccess();
     } catch (error) {
       // La notifica di errore viene gestita nel contesto di autenticazione
     } finally {
