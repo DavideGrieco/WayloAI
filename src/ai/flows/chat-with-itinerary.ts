@@ -50,6 +50,9 @@ Your instructions are:
 
 Itinerary Context:
 {{{itineraryJson}}}
+
+Now, answer the following user question:
+"{{userQuery}}"
 `,
 });
 
@@ -71,15 +74,13 @@ const chatWithItineraryFlow = ai.defineFlow(
       role: msg.role,
       content: msg.content,
     }));
-
-    // Prepara l'input per il prompt, che ora gestisce direttamente la cronologia
-    const promptInput = {
+    
+    // Il messaggio dell'utente è già nel prompt, quindi la cronologia è tutto ciò di cui abbiamo bisogno
+    // per dare contesto alla conversazione.
+    const { output } = await chatPrompt({
       itineraryJson: input.itineraryJson,
       userQuery: input.userQuery,
-      history,
-    };
-    
-    const { output } = await chatPrompt(promptInput);
+    }, { history });
 
     return output!;
   }
