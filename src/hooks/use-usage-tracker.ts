@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -11,34 +12,46 @@ type Usage = {
 };
 
 export const useUsageTracker = () => {
-  const [usage, setUsage] = useState<Usage>({ count: 0, month: -1 });
+  const [usage, setUsage] = useState<Usage>({ count: 0, month: new Date().getMonth() });
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    let storedUsage: string | null = null;
     try {
-      const storedUsage = localStorage.getItem(STORAGE_KEY);
-      const currentMonth = new Date().getMonth();
+      if (typeof window !== 'undefined') {
+        storedUsage = localStorage.getItem(STORAGE_KEY);
+      }
+    } catch (error) {
+       console.error("Could not read from localStorage", error);
+    }
+    
+    const currentMonth = new Date().getMonth();
 
-      if (storedUsage) {
+    if (storedUsage) {
+      try {
         const parsedUsage: Usage = JSON.parse(storedUsage);
         if (parsedUsage.month === currentMonth) {
           setUsage(parsedUsage);
         } else {
-          // New month, reset usage
           const newUsage = { count: 0, month: currentMonth };
           setUsage(newUsage);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsage));
+           if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsage));
         }
-      } else {
-        // No usage stored, initialize
+      } catch (e) {
+         const newUsage = { count: 0, month: currentMonth };
+         setUsage(newUsage);
+         if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsage));
+      }
+    } else {
         const newUsage = { count: 0, month: currentMonth };
         setUsage(newUsage);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsage));
-      }
-    } catch (error) {
-      console.error("Could not read usage from localStorage", error);
-      // Fallback to in-memory tracking if localStorage is unavailable
-      setUsage({ count: 0, month: new Date().getMonth() });
+        if (typeof window !== 'undefined') {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsage));
+            } catch(e) {
+                console.error("Could not write to localStorage", e);
+            }
+        }
     }
     setIsReady(true);
   }, []);
@@ -49,14 +62,16 @@ export const useUsageTracker = () => {
 
   const incrementUsage = useCallback(() => {
     const newCount = usage.count + 1;
-    if (newCount <= USAGE_LIMIT) {
-      const newUsage = { ...usage, count: newCount };
-      setUsage(newUsage);
-      try {
+    const currentMonth = new Date().getMonth();
+
+    const newUsage = { count: newCount, month: currentMonth };
+    setUsage(newUsage);
+    try {
+      if (typeof window !== 'undefined') {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newUsage));
-      } catch (error) {
-        console.error("Could not write usage to localStorage", error);
       }
+    } catch (error) {
+      console.error("Could not write usage to localStorage", error);
     }
   }, [usage]);
 

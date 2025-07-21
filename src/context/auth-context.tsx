@@ -12,6 +12,7 @@ import {
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextType {
   user: User | null;
@@ -30,13 +31,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isPremium, setIsPremium] = useState(false);
   const auth = getAuth(app);
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       
-      // Logica per determinare lo stato Premium
-      // Per ora, controlliamo se l'email contiene "+premium"
+      // Premium status logic: check if email contains "+premium"
       if (user && user.email?.includes('+premium')) {
         setIsPremium(true);
       } else {
@@ -51,6 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string) => {
     try {
       await createUserWithEmailAndPassword(auth, email, password);
+      router.push('/planner');
     } catch (error: any) {
       console.error("Errore di registrazione:", error);
       toast({
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
+       router.push('/planner');
     } catch (error: any) {
       console.error("Errore di accesso:", error);
        toast({
@@ -79,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      router.push('/');
     } catch (error: any) {
        console.error("Errore di logout:", error);
        toast({

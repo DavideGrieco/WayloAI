@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -69,5 +70,18 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+  .mask-image-hero {
+    -webkit-mask-image: linear-gradient(to bottom, white 20%, transparent 100%);
+    mask-image: linear-gradient(to bottom, white 20%, transparent 100%);
   }
 }
