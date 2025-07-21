@@ -106,7 +106,7 @@ export default function SavedTripPage() {
       
       const updatedItinerary = await editItinerary(input);
 
-      const updatedTripData = {
+      const updatedTripData: TripData = {
         ...trip,
         itineraryData: updatedItinerary,
       };

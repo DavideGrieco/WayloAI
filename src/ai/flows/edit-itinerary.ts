@@ -64,23 +64,33 @@ const GenerateItineraryInputSchema = z.object({
   hotelName: z.string().optional(),
 });
 
+// Updated Schema to accept a stringified itinerary
 const EditItineraryInputSchema = z.object({
-    existingItinerary: GenerateItineraryOutputSchema.describe("The existing JSON travel itinerary that needs to be modified."),
+    existingItineraryJson: z.string().describe("The existing JSON travel itinerary as a string."),
     editRequest: z.string().describe("The user's specific request to modify the itinerary (e.g., 'Add a shopping activity on day 2', 'Make the pace of the first day more relaxed')."),
     originalInput: GenerateItineraryInputSchema.optional().describe("The original input data used to create the itinerary, to maintain context.")
 });
 
-export type EditItineraryInput = z.infer<typeof EditItineraryInputSchema>;
+export type EditItineraryInput = {
+    existingItinerary: GenerateItineraryOutput,
+    editRequest: string,
+    originalInput?: z.infer<typeof GenerateItineraryInputSchema>
+};
 export type EditItineraryOutput = GenerateItineraryOutput;
 
 export async function editItinerary(input: EditItineraryInput): Promise<EditItineraryOutput> {
-  return editItineraryFlow(input);
+  const promptInput = {
+      existingItineraryJson: JSON.stringify(input.existingItinerary),
+      editRequest: input.editRequest,
+      originalInput: input.originalInput,
+  };
+  return editItineraryFlow(promptInput);
 }
 
 const editItineraryPrompt = ai.definePrompt({
   name: 'editItineraryPrompt',
-  input: {schema: EditItineraryInputSchema},
-  output: {schema: GenerateItineraryOutputSchema},
+  input: { schema: EditItineraryInputSchema },
+  output: { schema: GenerateItineraryOutputSchema },
   prompt: `You are an AI travel assistant named Waylo. Your task is to modify an existing travel itinerary based on a user's request.
 
 Original Data (if available):
@@ -92,7 +102,7 @@ Original Data (if available):
 - Pace: {{originalInput.travelPace}}
 
 Existing Itinerary (in JSON format):
-{{{jsonStringify existingItinerary}}}
+{{{existingItineraryJson}}}
 
 User's Edit Request:
 "{{editRequest}}"
@@ -112,19 +122,12 @@ const editItineraryFlow = ai.defineFlow(
     inputSchema: EditItineraryInputSchema,
     outputSchema: GenerateItineraryOutputSchema,
   },
-  async (input) => {
-    // The prompt needs the itinerary as a string, so we add a helper to stringify it.
-    const augmentedInput = { ...input, jsonStringify: JSON.stringify };
-    const {output} = await editItineraryPrompt(augmentedInput);
-    
-    if (typeof output === 'string') {
-        try {
-            return JSON.parse(output) as EditItineraryOutput;
-        } catch (e) {
-            console.error("Failed to parse stringified JSON from AI for edit, returning raw output.", e);
-        }
-    }
-    
+  async (promptInput) => {
+    const { output } = await editItineraryPrompt(promptInput);
+    // The AI output is already a JSON object due to the output schema.
+    // We should not parse it again here, as it can confuse the Next.js bundler.
+    // If the AI sometimes returns a string, that parsing should be handled
+    // carefully in the calling client component, not in the server flow.
     return output!;
   }
 );
