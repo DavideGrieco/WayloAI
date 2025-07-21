@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '@/context/auth-context';
+import { useState, useRef, useEffect, Fragment } from 'react';
 import type { TripData } from '@/services/trips-service';
 import { chatWithItinerary } from '@/ai/flows/chat-with-itinerary';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -23,8 +22,22 @@ type Message = {
     content: string;
 };
 
+const BoldRenderer = ({ text }: { text: string }) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return (
+      <p>
+        {parts.map((part, index) =>
+          part.startsWith('**') && part.endsWith('**') ? (
+            <strong key={index}>{part.slice(2, -2)}</strong>
+          ) : (
+            <Fragment key={index}>{part}</Fragment>
+          )
+        )}
+      </p>
+    );
+  };
+
 export function ItineraryChat({ trip }: ItineraryChatProps) {
-    const { user } = useAuth();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -82,7 +95,7 @@ export function ItineraryChat({ trip }: ItineraryChatProps) {
             <CardHeader>
                 <CardTitle>Chatta con il Tuo Itinerario</CardTitle>
                 <CardDescription>
-                    Chiedi consigli o dettagli sul tuo viaggio. L'assistente AI risponderà basandosi solo su questo piano.
+                    Chiedi consigli o dettagli sul tuo viaggio. L'assistente AI risponderà basandosi su questo piano e ricorderà la conversazione.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -110,7 +123,7 @@ export function ItineraryChat({ trip }: ItineraryChatProps) {
                                                 : 'bg-muted'
                                         )}
                                     >
-                                        <p>{message.content}</p>
+                                       <BoldRenderer text={message.content} />
                                     </div>
                                     {message.role === 'user' && (
                                          <Avatar className="h-8 w-8 bg-accent/20 text-accent">

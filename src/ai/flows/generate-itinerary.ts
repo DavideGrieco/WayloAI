@@ -103,7 +103,7 @@ const itineraryPrompt = ai.definePrompt({
   7.  **Eventi Locali:** Cerca attivamente eventuali feste, sagre, concerti, festività nazionali (es. Ferragosto il 15 Agosto) o altri eventi locali che si svolgono nella destinazione durante le date del viaggio. Includi queste informazioni nel campo 'localEvents'. Se non trovi nulla, scrivi 'Nessun evento speciale previsto'. Sii molto accurato su questo punto.
   8.  **Logistica:** Ottimizza l'itinerario logisticamente e geograficamente. Includi gli spostamenti ('transport') tra le attività principali, specificando il mezzo (es. "Metro Linea A", "Autobus 64").
   9.  **Arrivo e Partenza:** Tieni conto degli orari di arrivo e partenza per costruire il primo e l'ultimo giorno.
-  10. **Check-in Hotel:** Se l'utente fornisce un 'hotelName', l'itinerario del primo giorno deve includere un'attività di check-in presso quell'hotel. Se 'hotelName' non è fornito, il primo giorno dovrebbe includere un'attività generica come "Raggiungi la zona dell'alloggio e check-in".
+  10. **Check-in Hotel:** Se l'utente fornisce un 'hotelName', l'itinerario del primo giorno deve includere un'attività di check-in presso quell'hotel. Se 'hotelName' non è fornito, il primo giorno dovrebbe includere un'attività generica come "Raggiungi la zona dell'alloggio e check-in", non "check-in all'Hotel X".
   11. **Suggerimenti Alloggio:** Fornisci una lista di 2-3 suggerimenti di alloggio specifici ('accommodationSuggestions'), con nomi di hotel REALI e cliccabili, indipendentemente dal fatto che l'utente abbia fornito un nome di hotel.
   12. **Avvisi e Previsioni:** Fornisci avvisi su potenziali problemi ('potentialIssues'), previsioni meteorologiche essenziali ('weatherForecast'), e una stima dettagliata dei costi ('costEstimates').
 
